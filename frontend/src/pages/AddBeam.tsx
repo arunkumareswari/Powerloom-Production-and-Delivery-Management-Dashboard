@@ -204,12 +204,17 @@ const AddBeam = () => {
               Total Beam Meters <span className="text-red-500">*</span>
             </label>
             <input
-              type="number"
-              step="0.01"
+              type="text"
+              inputMode="decimal"
               value={formData.total_beam_meters}
-              onChange={(e) => setFormData({ ...formData, total_beam_meters: e.target.value })}
+              onChange={(e) => {
+                const value = e.target.value.replace(/[^0-9.]/g, '');
+                if (value.split('.').length <= 2) {
+                  setFormData({ ...formData, total_beam_meters: value });
+                }
+              }}
               className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-primary-500 focus:border-transparent outline-none"
-              placeholder="e.g., 1000"
+              placeholder="1000"
               required
             />
             <p className="text-xs text-gray-500 mt-1">Total meters in warp beam</p>
@@ -220,12 +225,17 @@ const AddBeam = () => {
               Meters per Piece <span className="text-red-500">*</span>
             </label>
             <input
-              type="number"
-              step="0.01"
+              type="text"
+              inputMode="decimal"
               value={formData.meters_per_piece}
-              onChange={(e) => setFormData({ ...formData, meters_per_piece: e.target.value })}
+              onChange={(e) => {
+                const value = e.target.value.replace(/[^0-9.]/g, '');
+                if (value.split('.').length <= 2) {
+                  setFormData({ ...formData, meters_per_piece: value });
+                }
+              }}
               className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-primary-500 focus:border-transparent outline-none"
-              placeholder="e.g., 4 (vesti) or 6 (saree)"
+              placeholder="4 (vesti) or 6 (saree)"
               required
             />
             <p className="text-xs text-gray-500 mt-1">Meters needed per piece</p>

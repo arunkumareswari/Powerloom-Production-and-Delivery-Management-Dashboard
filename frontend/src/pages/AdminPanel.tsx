@@ -338,8 +338,8 @@ const AdminPanel = () => {
                             <form onSubmit={handleAddPreset} className="bg-gray-50 rounded-xl p-6 space-y-4">
                                 <h3 className="font-semibold text-lg flex items-center space-x-2"><Plus className="w-5 h-5" /><span>Add New Design Preset</span></h3>
                                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                                    <input type="number" step="0.01" placeholder="Price (₹) *" value={presetForm.price} onChange={(e) => setPresetForm({ ...presetForm, price: e.target.value })} className="px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-primary-500 outline-none" required />
-                                    <input type="text" placeholder="Label (e.g., ₹50)" value={presetForm.label} onChange={(e) => setPresetForm({ ...presetForm, label: e.target.value })} className="px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-primary-500 outline-none" />
+                                    <input type="text" placeholder="Label (e.g., Vest-1)" value={presetForm.label} onChange={(e) => setPresetForm({ ...presetForm, label: e.target.value })} className="px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-primary-500 outline-none" required />
+                                    <input type="text" inputMode="decimal" placeholder="Price (₹) *" value={presetForm.price} onChange={(e) => setPresetForm({ ...presetForm, price: e.target.value })} className="px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-primary-500 outline-none" required />
                                 </div>
                                 <button type="submit" disabled={loading} className="w-full px-6 py-3 bg-primary-500 text-white rounded-xl hover:bg-primary-600 transition font-semibold disabled:opacity-50">{loading ? 'Adding...' : 'Add Preset'}</button>
                             </form>

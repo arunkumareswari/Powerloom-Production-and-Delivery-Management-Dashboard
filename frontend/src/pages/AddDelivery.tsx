@@ -11,7 +11,7 @@ const AddDelivery = () => {
   const [loading, setLoading] = useState(false);
   const [success, setSuccess] = useState(false);
   const [error, setError] = useState('');
-  
+
   const [activeBeams, setActiveBeams] = useState<any[]>([]);
   const [selectedBeam, setSelectedBeam] = useState<any>(null);
   const [pricePresets, setPricePresets] = useState<any[]>([]);
@@ -58,16 +58,6 @@ const AddDelivery = () => {
     const beam = activeBeams.find(b => b.id === parseInt(beamId));
     setSelectedBeam(beam);
     setFormData({ ...formData, beam_id: beamId });
-  };
-
-  const handlePricePresetChange = (price: string) => {
-    if (price === 'custom') {
-      setUseCustomPrice(true);
-      setFormData({ ...formData, price_per_piece: '' });
-    } else {
-      setUseCustomPrice(false);
-      setFormData({ ...formData, price_per_piece: price });
-    }
   };
 
   const calculateMeters = () => {
@@ -157,7 +147,7 @@ const AddDelivery = () => {
             <option value="">Choose a beam</option>
             {activeBeams.map((beam) => (
               <option key={beam.id} value={beam.id}>
-                {beam.beam_number} - {beam.customer_name} - Machine {beam.machine_number} 
+                {beam.beam_number} - {beam.customer_name} - Machine {beam.machine_number}
                 ({beam.remaining_meters.toFixed(0)}m remaining)
               </option>
             ))}
@@ -201,61 +191,55 @@ const AddDelivery = () => {
           />
         </div>
 
-        <div>
-          <label className="block text-sm font-medium text-gray-700 mb-2">
-            Design Name <span className="text-red-500">*</span>
-          </label>
-          <input
-            type="text"
-            value={formData.design_name}
-            onChange={(e) => setFormData({ ...formData, design_name: e.target.value })}
-            className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-primary-500 focus:border-transparent outline-none"
-            placeholder="e.g., Design A, Pattern 1"
-            required
-          />
-        </div>
 
         <div>
           <label className="block text-sm font-medium text-gray-700 mb-2">
-            Price per Piece <span className="text-red-500">*</span>
+            Design Preset <span className="text-red-500">*</span>
           </label>
-          <div className="flex space-x-2 mb-3">
+          <select
+            value={formData.price_per_piece ? `${formData.design_name}|${formData.price_per_piece}` : ''}
+            onChange={(e) => {
+              if (e.target.value === 'custom') {
+                setUseCustomPrice(true);
+                setFormData({ ...formData, design_name: '', price_per_piece: '' });
+              } else if (e.target.value) {
+                const [label, price] = e.target.value.split('|');
+                setUseCustomPrice(false);
+                setFormData({ ...formData, design_name: label, price_per_piece: price });
+              }
+            }}
+            className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-primary-500 focus:border-transparent outline-none"
+            required={!useCustomPrice}
+          >
+            <option value="">Select a design preset</option>
             {pricePresets.map((preset) => (
-              <button
-                key={preset.id}
-                type="button"
-                onClick={() => handlePricePresetChange(preset.price.toString())}
-                className={`px-4 py-2 rounded-lg border-2 transition ${
-                  formData.price_per_piece === preset.price.toString() && !useCustomPrice
-                    ? 'border-primary-500 bg-primary-50 text-primary-700 font-semibold'
-                    : 'border-gray-200 hover:border-gray-300'
-                }`}
-              >
+              <option key={preset.id} value={`${preset.label}|${preset.price}`}>
                 {preset.label}
-              </button>
+              </option>
             ))}
-            <button
-              type="button"
-              onClick={() => handlePricePresetChange('custom')}
-              className={`px-4 py-2 rounded-lg border-2 transition ${
-                useCustomPrice
-                  ? 'border-primary-500 bg-primary-50 text-primary-700 font-semibold'
-                  : 'border-gray-200 hover:border-gray-300'
-              }`}
-            >
-              Custom
-            </button>
-          </div>
+            <option value="custom">Custom Design & Price</option>
+          </select>
+
           {useCustomPrice && (
-            <input
-              type="number"
-              step="0.01"
-              value={formData.price_per_piece}
-              onChange={(e) => setFormData({ ...formData, price_per_piece: e.target.value })}
-              className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-primary-500 focus:border-transparent outline-none"
-              placeholder="Enter custom price"
-              required
-            />
+            <div className="mt-4 space-y-4">
+              <input
+                type="text"
+                value={formData.design_name}
+                onChange={(e) => setFormData({ ...formData, design_name: e.target.value })}
+                className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-primary-500 focus:border-transparent outline-none"
+                placeholder="Enter custom design name"
+                required
+              />
+              <input
+                type="text"
+                inputMode="decimal"
+                value={formData.price_per_piece}
+                onChange={(e) => setFormData({ ...formData, price_per_piece: e.target.value })}
+                className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-primary-500 focus:border-transparent outline-none"
+                placeholder="Enter custom price (₹)"
+                required
+              />
+            </div>
           )}
         </div>
 
@@ -265,11 +249,15 @@ const AddDelivery = () => {
               Good Pieces <span className="text-red-500">*</span>
             </label>
             <input
-              type="number"
+              type="text"
+              inputMode="numeric"
               value={formData.good_pieces}
-              onChange={(e) => setFormData({ ...formData, good_pieces: e.target.value })}
+              onChange={(e) => {
+                const value = e.target.value.replace(/[^0-9]/g, '');
+                setFormData({ ...formData, good_pieces: value });
+              }}
               className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-primary-500 focus:border-transparent outline-none"
-              placeholder="e.g., 90"
+              placeholder="90"
               required
             />
           </div>
@@ -279,11 +267,15 @@ const AddDelivery = () => {
               Damaged Pieces
             </label>
             <input
-              type="number"
+              type="text"
+              inputMode="numeric"
               value={formData.damaged_pieces}
-              onChange={(e) => setFormData({ ...formData, damaged_pieces: e.target.value })}
+              onChange={(e) => {
+                const value = e.target.value.replace(/[^0-9]/g, '');
+                setFormData({ ...formData, damaged_pieces: value });
+              }}
               className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-primary-500 focus:border-transparent outline-none"
-              placeholder="e.g., 10"
+              placeholder="10"
             />
           </div>
         </div>
