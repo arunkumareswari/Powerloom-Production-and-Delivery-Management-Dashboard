@@ -97,7 +97,7 @@ const AddBeam = () => {
   }
 
   return (
-    <div className="max-w-2xl mx-auto">
+    <div className="max-w-7xl mx-auto">
       {/* Header */}
       <div className="flex items-center space-x-4 mb-6">
         <button
@@ -120,85 +120,90 @@ const AddBeam = () => {
       )}
 
       {/* Main Beam Form */}
-      <form onSubmit={handleSubmit} className="bg-white rounded-2xl p-6 shadow-soft space-y-6">
-        <div>
-          <label className="block text-sm font-medium text-gray-700 mb-2">
-            Beam Number <span className="text-red-500">*</span>
-          </label>
-          <input
-            type="text"
-            value={formData.beam_number}
-            onChange={(e) => setFormData({ ...formData, beam_number: e.target.value })}
-            className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-primary-500 focus:border-transparent outline-none"
-            placeholder="e.g., WB12345"
-            required
-          />
-          <p className="text-xs text-gray-500 mt-1">Enter the warp beam number</p>
-        </div>
+      <form onSubmit={handleSubmit} className="bg-white rounded-2xl p-8 shadow-soft">
+        {/* Grid Layout - 3 columns on desktop, 1 on mobile */}
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 mb-6">
+          {/* Beam Number */}
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-2">
+              Beam Number <span className="text-red-500">*</span>
+            </label>
+            <input
+              type="text"
+              value={formData.beam_number}
+              onChange={(e) => setFormData({ ...formData, beam_number: e.target.value })}
+              className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-primary-500 focus:border-transparent outline-none"
+              placeholder="WB12345"
+              required
+            />
+            <p className="text-xs text-gray-500 mt-1">Warp beam number</p>
+          </div>
 
-        <div>
-          <label className="block text-sm font-medium text-gray-700 mb-2">
-            Customer <span className="text-red-500">*</span>
-          </label>
-          <select
-            value={formData.customer_id}
-            onChange={(e) => setFormData({ ...formData, customer_id: e.target.value })}
-            className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-primary-500 focus:border-transparent outline-none"
-            required
-          >
-            <option value="">Select Customer</option>
-            {customers.map((customer) => (
-              <option key={customer.id} value={customer.id}>
-                {customer.name}
-              </option>
-            ))}
-          </select>
-          <p className="text-xs text-gray-500 mt-1">Select which customer this beam is for</p>
-        </div>
+          {/* Customer */}
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-2">
+              Customer <span className="text-red-500">*</span>
+            </label>
+            <select
+              value={formData.customer_id}
+              onChange={(e) => setFormData({ ...formData, customer_id: e.target.value })}
+              className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-primary-500 focus:border-transparent outline-none"
+              required
+            >
+              <option value="">Select Customer</option>
+              {customers.map((customer) => (
+                <option key={customer.id} value={customer.id}>
+                  {customer.name}
+                </option>
+              ))}
+            </select>
+            <p className="text-xs text-gray-500 mt-1">Customer for this beam</p>
+          </div>
 
-        <div>
-          <label className="block text-sm font-medium text-gray-700 mb-2">
-            Workshop <span className="text-red-500">*</span>
-          </label>
-          <select
-            value={selectedWorkshop}
-            onChange={(e) => handleWorkshopChange(e.target.value)}
-            className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-primary-500 focus:border-transparent outline-none"
-            required
-          >
-            <option value="">Select Workshop</option>
-            {workshops.map((workshop) => (
-              <option key={workshop.id} value={workshop.id}>
-                {workshop.name} ({workshop.workshop_type})
-              </option>
-            ))}
-          </select>
-        </div>
+          {/* Workshop */}
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-2">
+              Workshop <span className="text-red-500">*</span>
+            </label>
+            <select
+              value={selectedWorkshop}
+              onChange={(e) => handleWorkshopChange(e.target.value)}
+              className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-primary-500 focus:border-transparent outline-none"
+              required
+            >
+              <option value="">Select Workshop</option>
+              {workshops.map((workshop) => (
+                <option key={workshop.id} value={workshop.id}>
+                  {workshop.name} ({workshop.workshop_type})
+                </option>
+              ))}
+            </select>
+            <p className="text-xs text-gray-500 mt-1">Production workshop</p>
+          </div>
 
-        <div>
-          <label className="block text-sm font-medium text-gray-700 mb-2">
-            Machine <span className="text-red-500">*</span>
-          </label>
-          <select
-            value={formData.machine_id}
-            onChange={(e) => setFormData({ ...formData, machine_id: e.target.value })}
-            className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-primary-500 focus:border-transparent outline-none"
-            required
-            disabled={!selectedWorkshop}
-          >
-            <option value="">Select Machine</option>
-            {machines.map((machine) => (
-              <option key={machine.id} value={machine.id}>
-                Machine {machine.machine_number} - {machine.fabric_type}
-              </option>
-            ))}
-          </select>
-          {!selectedWorkshop && (
-            <p className="text-xs text-gray-500 mt-1">Select a workshop first</p>
-          )}
-        </div>
+          {/* Machine */}
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-2">
+              Machine <span className="text-red-500">*</span>
+            </label>
+            <select
+              value={formData.machine_id}
+              onChange={(e) => setFormData({ ...formData, machine_id: e.target.value })}
+              className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-primary-500 focus:border-transparent outline-none"
+              required
+              disabled={!selectedWorkshop}
+            >
+              <option value="">Select Machine</option>
+              {machines.map((machine) => (
+                <option key={machine.id} value={machine.id}>
+                  Machine {machine.machine_number} - {machine.fabric_type}
+                </option>
+              ))}
+            </select>
+            <p className="text-xs text-gray-500 mt-1">{!selectedWorkshop ? 'Select workshop first' : 'Machine for production'}</p>
+          </div>
 
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+          {/* Total Beam Meters */}
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-2">
               Total Beam Meters <span className="text-red-500">*</span>
@@ -220,6 +225,7 @@ const AddBeam = () => {
             <p className="text-xs text-gray-500 mt-1">Total meters in warp beam</p>
           </div>
 
+          {/* Start Date */}
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-2">
               Meters per Piece <span className="text-red-500">*</span>
@@ -238,21 +244,23 @@ const AddBeam = () => {
               placeholder="4 (vesti) or 6 (saree)"
               required
             />
-            <p className="text-xs text-gray-500 mt-1">Meters needed per piece</p>
+            <p className="text-xs text-gray-500 mt-1">Meters per piece</p>
           </div>
-        </div>
 
-        <div>
-          <label className="block text-sm font-medium text-gray-700 mb-2">
-            Start Date <span className="text-red-500">*</span>
-          </label>
-          <input
-            type="date"
-            value={formData.start_date}
-            onChange={(e) => setFormData({ ...formData, start_date: e.target.value })}
-            className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-primary-500 focus:border-transparent outline-none"
-            required
-          />
+          {/* Start Date */}
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-2">
+              Start Date <span className="text-red-500">*</span>
+            </label>
+            <input
+              type="date"
+              value={formData.start_date}
+              onChange={(e) => setFormData({ ...formData, start_date: e.target.value })}
+              className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-primary-500 focus:border-transparent outline-none"
+              required
+            />
+            <p className="text-xs text-gray-500 mt-1">Beam start date</p>
+          </div>
         </div>
 
         {/* Estimated Output */}
