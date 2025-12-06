@@ -1,5 +1,5 @@
 import { Outlet, Link, useLocation } from 'react-router-dom';
-import { LayoutDashboard, Factory, FileText, Settings, LogOut, Lock } from 'lucide-react';
+import { LayoutDashboard, Factory, FileText, Settings, LogOut, Lock, Plus, Package, Sliders } from 'lucide-react';
 
 interface LayoutProps {
   isAdmin: boolean;
@@ -94,21 +94,23 @@ const Layout = ({ isAdmin, onLogout }: LayoutProps) => {
                   to="/add-beam"
                   className={`flex items-center space-x-3 px-4 py-3 rounded-xl transition ${isActive('/add-beam')}`}
                 >
-                  <span className="font-medium">➕ Add Beam</span>
+                  <Plus className="w-5 h-5" />
+                  <span className="font-medium">Add Beam</span>
                 </Link>
 
                 <Link
                   to="/add-delivery"
                   className={`flex items-center space-x-3 px-4 py-3 rounded-xl transition ${isActive('/add-delivery')}`}
                 >
-                  <span className="font-medium">📦 Add Delivery</span>
+                  <Package className="w-5 h-5" />
+                  <span className="font-medium">Add Delivery</span>
                 </Link>
 
                 <Link
                   to="/admin-panel"
                   className={`flex items-center space-x-3 px-4 py-3 rounded-xl transition ${isActive('/admin-panel')}`}
                 >
-                  <Settings className="w-5 h-5" />
+                  <Sliders className="w-5 h-5" />
                   <span className="font-medium">Manage</span>
                 </Link>
 
