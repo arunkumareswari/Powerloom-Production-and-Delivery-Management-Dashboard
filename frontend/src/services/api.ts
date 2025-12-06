@@ -28,7 +28,7 @@ export const authAPI = {
 
 // Dashboard APIs
 export const dashboardAPI = {
-  getOverview: () => api.get('/dashboard/overview'),
+  getOverview: (params?: any) => api.get('/dashboard/overview', { params }),
 };
 
 // Beam APIs

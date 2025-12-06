@@ -17,25 +17,46 @@ const Dashboard = ({ isAdmin }: { isAdmin: boolean }) => {
   const [data, setData] = useState<DashboardData | null>(null);
   const [activeBeams, setActiveBeams] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
+  const [filterType, setFilterType] = useState<'all' | 'month' | 'custom'>('month');
+  const [startDate, setStartDate] = useState('');
+  const [endDate, setEndDate] = useState('');
+  const [fabricType, setFabricType] = useState<string>('all');
 
   useEffect(() => {
-    fetchDashboardData();
-  }, []);
+    const fetchData = async () => {
+      try {
+        let params: any = {};
+        if (filterType === 'custom' && startDate && endDate) {
+          params.start_date = startDate;
+          params.end_date = endDate;
+        } else if (filterType === 'all') {
+          params.start_date = '2000-01-01';
+          params.end_date = '2099-12-31';
+        }
+        // filterType === 'month' uses default (no params)
 
-  const fetchDashboardData = async () => {
-    try {
-      const [overview, beams] = await Promise.all([
-        dashboardAPI.getOverview(),
-        beamAPI.getAll('active')
-      ]);
-      setData(overview.data);
-      setActiveBeams(beams.data.beams);
-      setLoading(false);
-    } catch (error) {
-      console.error('Error fetching dashboard data:', error);
-      setLoading(false);
-    }
-  };
+        // Add fabric filter
+        if (fabricType !== 'all') {
+          params.fabric_type = fabricType;
+        }
+
+        const [overview, beams] = await Promise.all([
+          dashboardAPI.getOverview(params),
+          beamAPI.getAll('active')
+        ]);
+        console.log('Dashboard API Response:', overview.data);
+        setData(overview.data);
+        setActiveBeams(beams.data.beams);
+        setLoading(false);
+      } catch (error) {
+        console.error('Error fetching dashboard data:', error);
+        setLoading(false);
+      }
+    };
+
+    fetchData();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [filterType, startDate, endDate, fabricType]);
 
   if (loading) {
     return (
@@ -47,7 +68,7 @@ const Dashboard = ({ isAdmin }: { isAdmin: boolean }) => {
 
   if (!data) return null;
 
-  const damagePercentage = data.total_pieces_this_month > 0 
+  const damagePercentage = data.total_pieces_this_month > 0
     ? (data.total_damaged_this_month / (data.total_pieces_this_month + data.total_damaged_this_month) * 100).toFixed(1)
     : '0';
 
@@ -58,10 +79,56 @@ const Dashboard = ({ isAdmin }: { isAdmin: boolean }) => {
 
   return (
     <div className="space-y-6">
-      {/* Header */}
-      <div>
-        <h1 className="text-3xl font-bold text-gray-900">Dashboard</h1>
-        <p className="text-gray-600 mt-1">Overview of this month's production</p>
+      {/* Header with Filter */}
+      <div className="flex items-center justify-between">
+        <div>
+          <h1 className="text-3xl font-bold text-gray-900">Dashboard</h1>
+          <p className="text-gray-600 mt-1">Overview of production data</p>
+        </div>
+
+        {/* Filters */}
+        <div className="flex items-center space-x-3">
+          {/* Date Filter */}
+          <select
+            value={filterType}
+            onChange={(e) => setFilterType(e.target.value as any)}
+            className="px-4 py-2 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-primary-500"
+          >
+            <option value="month">This Month</option>
+            <option value="all">All Time</option>
+            <option value="custom">Custom Range</option>
+          </select>
+
+          {filterType === 'custom' && (
+            <>
+              <input
+                type="date"
+                value={startDate}
+                onChange={(e) => setStartDate(e.target.value)}
+                className="px-4 py-2 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-primary-500"
+                placeholder="Start Date"
+              />
+              <input
+                type="date"
+                value={endDate}
+                onChange={(e) => setEndDate(e.target.value)}
+                className="px-4 py-2 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-primary-500"
+                placeholder="End Date"
+              />
+            </>
+          )}
+
+          {/* Fabric Filter */}
+          <select
+            value={fabricType}
+            onChange={(e) => setFabricType(e.target.value)}
+            className="px-4 py-2 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-primary-500"
+          >
+            <option value="all">All Fabrics</option>
+            <option value="vesti">Vesti</option>
+            <option value="saree">Saree</option>
+          </select>
+        </div>
       </div>
 
       {/* Stats Cards */}
@@ -107,7 +174,7 @@ const Dashboard = ({ isAdmin }: { isAdmin: boolean }) => {
           <div className="flex items-center justify-between">
             <div>
               <p className="text-sm text-gray-600">Total Amount</p>
-              <p className="text-3xl font-bold text-primary-600 mt-2">₹{data.pending_amount_this_month.toLocaleString()}</p>
+              <p className="text-3xl font-bold text-primary-600 mt-2">₹{(data.pending_amount_this_month || 0).toLocaleString()}</p>
             </div>
             <div className="w-12 h-12 bg-primary-100 rounded-xl flex items-center justify-center">
               <DollarSign className="w-6 h-6 text-primary-600" />
@@ -189,10 +256,10 @@ const Dashboard = ({ isAdmin }: { isAdmin: boolean }) => {
           {activeBeams.map((beam) => {
             const usedPercentage = (beam.total_meters_used / beam.total_beam_meters * 100).toFixed(1);
             const remainingPercentage = 100 - parseFloat(usedPercentage);
-            
+
             return (
-              <Link 
-                key={beam.id} 
+              <Link
+                key={beam.id}
                 to={`/beams/${beam.id}`}
                 className="block border border-gray-200 rounded-xl p-4 hover:border-primary-300 hover:shadow-md transition"
               >
@@ -208,7 +275,7 @@ const Dashboard = ({ isAdmin }: { isAdmin: boolean }) => {
                     <p className="text-xs text-gray-500">pieces produced</p>
                   </div>
                 </div>
-                
+
                 {/* Progress Bar */}
                 <div className="space-y-1">
                   <div className="flex justify-between text-xs text-gray-600">
@@ -218,10 +285,9 @@ const Dashboard = ({ isAdmin }: { isAdmin: boolean }) => {
                     </span>
                   </div>
                   <div className="w-full bg-gray-200 rounded-full h-3 overflow-hidden">
-                    <div 
-                      className={`h-full rounded-full transition-all ${
-                        remainingPercentage < 20 ? 'bg-red-500' : 'bg-primary-500'
-                      }`}
+                    <div
+                      className={`h-full rounded-full transition-all ${remainingPercentage < 20 ? 'bg-red-500' : 'bg-primary-500'
+                        }`}
                       style={{ width: `${usedPercentage}%` }}
                     ></div>
                   </div>

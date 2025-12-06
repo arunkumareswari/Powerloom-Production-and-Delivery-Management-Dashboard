@@ -58,8 +58,8 @@ const Layout = ({ isAdmin, onLogout }: LayoutProps) => {
       </nav>
 
       <div className="flex">
-        {/* Sidebar */}
-        <aside className="w-64 bg-white shadow-soft min-h-screen sticky top-16 self-start">
+        {/* Sidebar - Floating Panel */}
+        <aside className="w-64 bg-white shadow-lg min-h-screen sticky top-16 self-start mt-2 ml-2 mb-2 rounded-2xl">
           <nav className="p-4 space-y-2">
             <Link
               to="/"
@@ -109,7 +109,7 @@ const Layout = ({ isAdmin, onLogout }: LayoutProps) => {
                   className={`flex items-center space-x-3 px-4 py-3 rounded-xl transition ${isActive('/admin-panel')}`}
                 >
                   <Settings className="w-5 h-5" />
-                  <span className="font-medium">⚙️ Manage</span>
+                  <span className="font-medium">Manage</span>
                 </Link>
 
                 <Link

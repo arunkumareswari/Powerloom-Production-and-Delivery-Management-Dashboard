@@ -241,54 +241,76 @@ async def reset_password(username: str, new_password: str, admin: str = Depends(
 # ========================================
 
 @app.get("/api/dashboard/overview")
-async def get_dashboard_overview():
+async def get_dashboard_overview(start_date: str = None, end_date: str = None, fabric_type: str = None):
     conn = get_db_connection()
     cursor = conn.cursor(dictionary=True)
+    
+    # Build date filter condition
+    if start_date and end_date:
+        date_filter = f"delivery_date BETWEEN '{start_date}' AND '{end_date}'"
+    elif start_date:
+        date_filter = f"delivery_date >= '{start_date}'"
+    elif end_date:
+        date_filter = f"delivery_date <= '{end_date}'"
+    else:
+        # Default to current month
+        date_filter = "MONTH(delivery_date) = MONTH(CURRENT_DATE()) AND YEAR(delivery_date) = YEAR(CURRENT_DATE())"
+    
+    # Build fabric filter condition
+    fabric_filter = f"AND m.fabric_type = '{fabric_type}'" if fabric_type else ""
     
     # Active beams count
     cursor.execute("SELECT COUNT(*) as count FROM beam_starts WHERE status = 'active'")
     active_beams = cursor.fetchone()['count']
     
-    # This month production
-    cursor.execute("""
-        SELECT COALESCE(SUM(good_pieces), 0) as total_pieces,
-               COALESCE(SUM(damaged_pieces), 0) as total_damaged
-        FROM deliveries 
-        WHERE MONTH(delivery_date) = MONTH(CURRENT_DATE()) 
-        AND YEAR(delivery_date) = YEAR(CURRENT_DATE())
+    # Production with date and fabric filter
+    cursor.execute(f"""
+        SELECT COALESCE(SUM(d.good_pieces), 0) as total_pieces,
+               COALESCE(SUM(d.damaged_pieces), 0) as total_damaged
+        FROM deliveries d
+        JOIN beam_starts b ON d.beam_id = b.id
+        JOIN machines m ON b.machine_id = m.id
+        WHERE {date_filter} {fabric_filter}
     """)
     production = cursor.fetchone()
     
-    # Total pending amount (this month)
-    cursor.execute("""
-        SELECT COALESCE(SUM(total_amount), 0) as pending_amount
-        FROM deliveries 
-        WHERE MONTH(delivery_date) = MONTH(CURRENT_DATE()) 
-        AND YEAR(delivery_date) = YEAR(CURRENT_DATE())
+    # Total amount with date and fabric filter
+    cursor.execute(f"""
+        SELECT COALESCE(SUM(d.total_amount), 0) as pending_amount
+        FROM deliveries d
+        JOIN beam_starts b ON d.beam_id = b.id
+        JOIN machines m ON b.machine_id = m.id
+        WHERE {date_filter} {fabric_filter}
     """)
     pending = cursor.fetchone()
     
-    # Workshop-wise production
-    cursor.execute("""
+    # Build fabric JOIN filter for LEFT JOIN queries
+    fabric_join_filter = f"AND m.fabric_type = '{fabric_type}'" if fabric_type else ""
+    
+    # Workshop-wise production with date and fabric filter
+    # Use INNER JOIN when fabric filter is active to hide workshops without that fabric
+    join_type = "INNER JOIN" if fabric_type else "LEFT JOIN"
+    cursor.execute(f"""
         SELECT w.name as workshop_name, 
                COALESCE(SUM(d.good_pieces), 0) as total_pieces
         FROM workshops w
-        LEFT JOIN beam_starts b ON w.id = b.workshop_id AND b.status = 'active'
-        LEFT JOIN deliveries d ON b.id = d.beam_id 
-               AND MONTH(d.delivery_date) = MONTH(CURRENT_DATE())
+        {join_type} beam_starts b ON w.id = b.workshop_id
+        {join_type} machines m ON b.machine_id = m.id {fabric_join_filter}
+        LEFT JOIN deliveries d ON b.id = d.beam_id AND {date_filter}
         GROUP BY w.id, w.name
+        HAVING total_pieces > 0
     """)
     workshop_production = cursor.fetchall()
     
-    # Customer-wise summary
-    cursor.execute("""
+    # Customer-wise summary with date and fabric filter
+    cursor.execute(f"""
         SELECT c.name as customer_name,
                COALESCE(SUM(d.good_pieces), 0) as total_pieces,
                COALESCE(SUM(d.total_amount), 0) as total_amount
         FROM customers c
-        LEFT JOIN beam_starts b ON c.id = b.customer_id AND b.status = 'active'
-        LEFT JOIN deliveries d ON b.id = d.beam_id
-               AND MONTH(d.delivery_date) = MONTH(CURRENT_DATE())
+        LEFT JOIN beam_starts b ON c.id = b.customer_id
+        LEFT JOIN machines m ON b.machine_id = m.id {fabric_join_filter}
+        LEFT JOIN deliveries d ON b.id = d.beam_id AND {date_filter}
         GROUP BY c.id, c.name
     """)
     customer_summary = cursor.fetchall()
