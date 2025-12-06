@@ -470,32 +470,47 @@ async def start_new_beam(beam: BeamStartCreate, admin: str = Depends(verify_toke
     conn = get_db_connection()
     cursor = conn.cursor()
     
-    # Get machine details (workshop_id and fabric_type only)
-    cursor.execute("""
-        SELECT workshop_id, fabric_type 
-        FROM machines WHERE id = %s
-    """, (beam.machine_id,))
-    machine = cursor.fetchone()
+    try:
+        # Get machine details (workshop_id and fabric_type only)
+        cursor.execute("""
+            SELECT workshop_id, fabric_type 
+            FROM machines WHERE id = %s
+        """, (beam.machine_id,))
+        machine = cursor.fetchone()
+        
+        if not machine:
+            raise HTTPException(status_code=404, detail="Machine not found")
+        
+        # Insert beam with customer_id from request
+        cursor.execute("""
+            INSERT INTO beam_starts 
+            (beam_number, machine_id, workshop_id, customer_id, fabric_type, 
+             total_beam_meters, meters_per_piece, start_date, status)
+            VALUES (%s, %s, %s, %s, %s, %s, %s, %s, 'active')
+        """, (beam.beam_number, beam.machine_id, machine[0], beam.customer_id, 
+              machine[1], beam.total_beam_meters, beam.meters_per_piece, beam.start_date))
+        
+        conn.commit()
+        beam_id = cursor.lastrowid
+        
+        cursor.close()
+        conn.close()
+        
+        return {"message": "Beam started successfully", "beam_id": beam_id}
     
-    if not machine:
-        raise HTTPException(status_code=404, detail="Machine not found")
-    
-    # Insert beam with customer_id from request
-    cursor.execute("""
-        INSERT INTO beam_starts 
-        (beam_number, machine_id, workshop_id, customer_id, fabric_type, 
-         total_beam_meters, meters_per_piece, start_date, status)
-        VALUES (%s, %s, %s, %s, %s, %s, %s, %s, 'active')
-    """, (beam.beam_number, beam.machine_id, machine[0], beam.customer_id, 
-          machine[1], beam.total_beam_meters, beam.meters_per_piece, beam.start_date))
-    
-    conn.commit()
-    beam_id = cursor.lastrowid
-    
-    cursor.close()
-    conn.close()
-    
-    return {"message": "Beam started successfully", "beam_id": beam_id}
+    except Error as e:
+        conn.rollback()
+        cursor.close()
+        conn.close()
+        
+        # Check for duplicate entry error
+        if e.errno == 1062:  # Duplicate entry error code
+            raise HTTPException(
+                status_code=400, 
+                detail=f"Duplicate entry '{beam.beam_number}' for key 'beam_number'"
+            )
+        else:
+            raise HTTPException(status_code=500, detail=f"Database error: {str(e)}")
 
 @app.post("/api/beams/{beam_id}/end")
 async def end_beam(beam_id: int, admin: str = Depends(verify_token)):

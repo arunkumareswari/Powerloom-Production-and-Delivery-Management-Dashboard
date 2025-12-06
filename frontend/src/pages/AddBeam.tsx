@@ -79,7 +79,20 @@ const AddBeam = () => {
         navigate('/workshops');
       }, 2000);
     } catch (err: any) {
-      setError(err.response?.data?.detail || 'Failed to start beam');
+      let errorMessage = 'Failed to start beam';
+
+      if (err.response?.data?.detail) {
+        const detail = err.response.data.detail;
+
+        // Check for duplicate beam number error
+        if (detail.includes('Duplicate entry') && detail.includes('beam_number')) {
+          errorMessage = `Beam number "${formData.beam_number}" already exists. Please use a different beam number.`;
+        } else {
+          errorMessage = detail;
+        }
+      }
+
+      setError(errorMessage);
       setLoading(false);
     }
   };
