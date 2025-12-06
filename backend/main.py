@@ -236,6 +236,39 @@ async def reset_password(username: str, new_password: str, admin: str = Depends(
     conn.close()
     return {"message": "Password reset successful"}
 
+@app.post("/api/admin/reset-database")
+async def reset_database(admin_password: str, admin: str = Depends(verify_token)):
+    """Reset database - Delete ALL data except admin credentials"""
+    conn = get_db_connection()
+    cursor = conn.cursor(dictionary=True)
+    
+    try:
+        # Verify admin password
+        cursor.execute("SELECT password_hash FROM admin_users WHERE username = 'admin'")
+        admin_user = cursor.fetchone()
+        
+        if not admin_user or not bcrypt.checkpw(admin_password.encode(), admin_user['password_hash'].encode()):
+            raise HTTPException(status_code=401, detail="Invalid admin password")
+        
+        # Delete all data in correct order (respecting foreign keys)
+        cursor.execute("DELETE FROM deliveries")
+        cursor.execute("DELETE FROM beam_starts")
+        cursor.execute("DELETE FROM design_presets")
+        cursor.execute("DELETE FROM machines")
+        cursor.execute("DELETE FROM workshops")
+        cursor.execute("DELETE FROM customers")
+        
+        conn.commit()
+        
+        return {"message": "Database reset successfully. All data deleted."}
+    
+    except Error as e:
+        conn.rollback()
+        raise HTTPException(status_code=500, detail=f"Database error: {str(e)}")
+    finally:
+        cursor.close()
+        conn.close()
+
 # ========================================
 # DASHBOARD ENDPOINTS
 # ========================================

@@ -7,7 +7,7 @@ const Settings = () => {
   const [loading, setLoading] = useState(false);
   const [success, setSuccess] = useState('');
   const [error, setError] = useState('');
-  
+
   const [passwordData, setPasswordData] = useState({
     username: 'admin',
     new_password: '',
@@ -127,66 +127,127 @@ const Settings = () => {
         </form>
       </div>
 
-      {/* System Information */}
-      <div className="bg-white rounded-2xl p-6 shadow-soft">
-        <h3 className="text-lg font-semibold mb-4">System Management</h3>
-        <div className="space-y-3">
-          <Link
-            to="/manage-machines"
-            className="flex items-center justify-between py-3 px-4 bg-primary-50 hover:bg-primary-100 rounded-xl transition"
-          >
-            <div className="flex items-center space-x-3">
-              <div className="w-10 h-10 bg-primary-500 rounded-lg flex items-center justify-center">
-                <span className="text-white text-xl">⚙️</span>
-              </div>
-              <div>
-                <p className="font-semibold text-gray-900">Manage Machines</p>
-                <p className="text-sm text-gray-600">Add, edit, or remove machines</p>
-              </div>
+
+      {/* Danger Zone - Reset Database */}
+      <div className="bg-white rounded-2xl p-6 shadow-soft border-2 border-red-200">
+        <div className="flex items-center space-x-3 mb-4">
+          <div className="w-12 h-12 bg-red-100 rounded-xl flex items-center justify-center">
+            <AlertCircle className="w-6 h-6 text-red-600" />
+          </div>
+          <div>
+            <h3 className="text-lg font-semibold text-gray-900">Danger Zone</h3>
+            <p className="text-sm text-gray-600">Irreversible actions</p>
+          </div>
+        </div>
+
+        <div className="bg-red-50 border border-red-200 rounded-xl p-4 mb-4">
+          <p className="text-sm text-red-800 font-semibold mb-2">⚠️ Warning: This action cannot be undone!</p>
+          <p className="text-sm text-red-700">
+            Resetting the database will permanently delete ALL data including:
+          </p>
+          <ul className="text-sm text-red-700 mt-2 ml-4 list-disc space-y-1">
+            <li>All beams and deliveries</li>
+            <li>All workshops, customers, and machines</li>
+            <li>All design presets and production history</li>
+            <li>Everything except admin credentials</li>
+          </ul>
+        </div>
+
+        <button
+          onClick={() => {
+            const modal = document.getElementById('reset-modal');
+            if (modal) modal.classList.remove('hidden');
+          }}
+          className="w-full px-6 py-3 bg-red-600 text-white rounded-xl hover:bg-red-700 transition font-semibold"
+        >
+          Reset Database
+        </button>
+      </div>
+
+      {/* Reset Confirmation Modal */}
+      <div id="reset-modal" className="hidden fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+        <div className="bg-white rounded-2xl p-8 max-w-md w-full mx-4 shadow-2xl">
+          <div className="flex items-center space-x-3 mb-6">
+            <div className="w-12 h-12 bg-red-100 rounded-xl flex items-center justify-center">
+              <AlertCircle className="w-6 h-6 text-red-600" />
             </div>
-            <span className="text-primary-600 font-semibold">→</span>
-          </Link>
-        </div>
-      </div>
+            <div>
+              <h3 className="text-xl font-bold text-gray-900">Confirm Database Reset</h3>
+              <p className="text-sm text-gray-600">Enter admin password to proceed</p>
+            </div>
+          </div>
 
-      {/* System Information */}
-      <div className="bg-white rounded-2xl p-6 shadow-soft">
-        <h3 className="text-lg font-semibold mb-4">System Information</h3>
-        <div className="space-y-3">
-          <div className="flex justify-between py-2 border-b border-gray-100">
-            <span className="text-gray-600">Application</span>
-            <span className="font-semibold text-gray-900">Powerloom Dashboard v1.0</span>
+          <div className="bg-red-50 border border-red-200 rounded-xl p-4 mb-6">
+            <p className="text-sm text-red-800 font-semibold">This will delete ALL data permanently!</p>
           </div>
-          <div className="flex justify-between py-2 border-b border-gray-100">
-            <span className="text-gray-600">Database</span>
-            <span className="font-semibold text-gray-900">MySQL</span>
-          </div>
-          <div className="flex justify-between py-2 border-b border-gray-100">
-            <span className="text-gray-600">Backend</span>
-            <span className="font-semibold text-gray-900">FastAPI (Python)</span>
-          </div>
-          <div className="flex justify-between py-2">
-            <span className="text-gray-600">Frontend</span>
-            <span className="font-semibold text-gray-900">React + TypeScript</span>
-          </div>
-        </div>
-      </div>
 
-      {/* Help & Support */}
-      <div className="bg-gradient-to-r from-primary-50 to-primary-100 rounded-2xl p-6">
-        <h3 className="text-lg font-semibold text-gray-900 mb-2">Need Help?</h3>
-        <p className="text-gray-700 mb-4">
-          If you encounter any issues or need assistance with the dashboard, please contact support.
-        </p>
-        <div className="flex space-x-4">
-          <div className="bg-white rounded-xl px-4 py-2 text-sm">
-            <span className="text-gray-600">Email:</span>{' '}
-            <span className="font-semibold text-gray-900">support@powerloom.com</span>
-          </div>
-          <div className="bg-white rounded-xl px-4 py-2 text-sm">
-            <span className="text-gray-600">Phone:</span>{' '}
-            <span className="font-semibold text-gray-900">+91 98765 43210</span>
-          </div>
+          <form onSubmit={async (e) => {
+            e.preventDefault();
+            const password = (document.getElementById('reset-password') as HTMLInputElement).value;
+
+            try {
+              setLoading(true);
+              setError('');
+
+              // Call reset API
+              const response = await fetch(`${import.meta.env.VITE_API_URL}/api/admin/reset-database`, {
+                method: 'POST',
+                headers: {
+                  'Content-Type': 'application/json',
+                  'Authorization': `Bearer ${localStorage.getItem('token')}`
+                },
+                body: JSON.stringify({ admin_password: password })
+              });
+
+              if (!response.ok) {
+                const data = await response.json();
+                throw new Error(data.detail || 'Failed to reset database');
+              }
+
+              setSuccess('Database reset successfully! All data has been deleted.');
+              const modal = document.getElementById('reset-modal');
+              if (modal) modal.classList.add('hidden');
+              (document.getElementById('reset-password') as HTMLInputElement).value = '';
+            } catch (err: any) {
+              setError(err.message || 'Failed to reset database');
+            } finally {
+              setLoading(false);
+            }
+          }} className="space-y-4">
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-2">
+                Admin Password <span className="text-red-500">*</span>
+              </label>
+              <input
+                id="reset-password"
+                type="password"
+                className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-red-500 focus:border-transparent outline-none"
+                placeholder="Enter admin password"
+                required
+              />
+            </div>
+
+            <div className="flex space-x-3">
+              <button
+                type="button"
+                onClick={() => {
+                  const modal = document.getElementById('reset-modal');
+                  if (modal) modal.classList.add('hidden');
+                  (document.getElementById('reset-password') as HTMLInputElement).value = '';
+                }}
+                className="flex-1 px-6 py-3 border border-gray-300 text-gray-700 rounded-xl hover:bg-gray-50 transition font-semibold"
+              >
+                Cancel
+              </button>
+              <button
+                type="submit"
+                disabled={loading}
+                className="flex-1 px-6 py-3 bg-red-600 text-white rounded-xl hover:bg-red-700 transition font-semibold disabled:opacity-50"
+              >
+                {loading ? 'Resetting...' : 'Reset Database'}
+              </button>
+            </div>
+          </form>
         </div>
       </div>
     </div>
