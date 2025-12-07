@@ -1,11 +1,13 @@
 import { useEffect, useState } from 'react';
 import { workshopAPI } from '../services/api';
-import { Factory, AlertTriangle, Archive, ArrowUp, ArrowDown } from 'lucide-react';
-import { Link, useNavigate } from 'react-router-dom';
+import { Factory, AlertTriangle, Archive, ArrowUp, ArrowDown, Trash2 } from 'lucide-react';
+import { Link, useNavigate, useSearchParams } from 'react-router-dom';
 import api from '../services/api';
+import ConfirmModal from '../components/ConfirmModal';
 
 const Workshops = ({ isAdmin }: { isAdmin: boolean }) => {
   const navigate = useNavigate();
+  const [searchParams, setSearchParams] = useSearchParams();
   const [workshops, setWorkshops] = useState<any[]>([]);
   const [selectedWorkshop, setSelectedWorkshop] = useState<number | null>(null);
   const [machines, setMachines] = useState<any[]>([]);
@@ -29,10 +31,28 @@ const Workshops = ({ isAdmin }: { isAdmin: boolean }) => {
     direction: 'desc'
   });
 
+  // Modal state
+  const [confirmModal, setConfirmModal] = useState<{
+    isOpen: boolean;
+    title: string;
+    message: string;
+    onConfirm: () => void;
+  }>({ isOpen: false, title: '', message: '', onConfirm: () => { } });
+
   useEffect(() => {
     fetchWorkshops();
     fetchArchivedBeams();
   }, []);
+
+  // Check URL params for Archive view
+  useEffect(() => {
+    const viewParam = searchParams.get('view');
+    if (viewParam === 'archive') {
+      setShowArchive(true);
+    } else {
+      setShowArchive(false);
+    }
+  }, [searchParams]);
 
   const fetchWorkshops = async () => {
     try {
@@ -122,6 +142,28 @@ const Workshops = ({ isAdmin }: { isAdmin: boolean }) => {
     });
   };
 
+  // Handle beam deletion
+  const handleDeleteBeam = async (beamId: number, beamNumber: string) => {
+    setConfirmModal({
+      isOpen: true,
+      title: 'Delete Beam',
+      message: `Are you sure you want to delete beam "${beamNumber}"? This action cannot be undone.`,
+      onConfirm: async () => {
+        try {
+          await api.delete(`/beams/${beamId}`);
+          // Refresh machines for current workshop
+          if (selectedWorkshop) {
+            const response = await workshopAPI.getMachines(selectedWorkshop);
+            setMachines(response.data.machines);
+          }
+        } catch (error) {
+          console.error('Error deleting beam:', error);
+          alert('Failed to delete beam. Please try again.');
+        }
+      }
+    });
+  };
+
   if (loading) {
     return (
       <div className="flex items-center justify-center h-96">
@@ -142,7 +184,10 @@ const Workshops = ({ isAdmin }: { isAdmin: boolean }) => {
         {/* Present/Archive Toggle */}
         <div className="flex items-center bg-gray-100 rounded-xl p-1">
           <button
-            onClick={() => setShowArchive(false)}
+            onClick={() => {
+              setShowArchive(false);
+              setSearchParams({});
+            }}
             className={`px-6 py-2 rounded-lg font-semibold transition-all ${!showArchive
               ? 'bg-white text-primary-600 shadow-sm'
               : 'text-gray-600 hover:text-gray-900'
@@ -151,7 +196,10 @@ const Workshops = ({ isAdmin }: { isAdmin: boolean }) => {
             Present
           </button>
           <button
-            onClick={() => setShowArchive(true)}
+            onClick={() => {
+              setShowArchive(true);
+              setSearchParams({ view: 'archive' });
+            }}
             className={`px-6 py-2 rounded-lg font-semibold transition-all ${showArchive
               ? 'bg-white text-primary-600 shadow-sm'
               : 'text-gray-600 hover:text-gray-900'
@@ -465,9 +513,20 @@ const Workshops = ({ isAdmin }: { isAdmin: boolean }) => {
                       {machine.fabric_type.toUpperCase()}
                     </span>
                   </div>
-                  {hasBeam && remainingPercentage < 20 && (
-                    <AlertTriangle className="w-6 h-6 text-red-500" />
-                  )}
+                  <div className="flex items-center space-x-2">
+                    {hasBeam && remainingPercentage < 20 && (
+                      <AlertTriangle className="w-6 h-6 text-red-500" />
+                    )}
+                    {hasBeam && (
+                      <button
+                        onClick={() => handleDeleteBeam(machine.beam_id, machine.beam_number)}
+                        className="p-2 text-red-600 hover:bg-red-50 rounded-lg transition"
+                        title="Delete Beam"
+                      >
+                        <Trash2 className="w-5 h-5" />
+                      </button>
+                    )}
+                  </div>
                 </div>
 
                 {hasBeam ? (
@@ -538,6 +597,17 @@ const Workshops = ({ isAdmin }: { isAdmin: boolean }) => {
           })}
         </div>
       )}
+
+      {/* Confirm Modal */}
+      <ConfirmModal
+        isOpen={confirmModal.isOpen}
+        onClose={() => setConfirmModal({ ...confirmModal, isOpen: false })}
+        onConfirm={confirmModal.onConfirm}
+        title={confirmModal.title}
+        message={confirmModal.message}
+        confirmText="Delete"
+        type="danger"
+      />
     </div>
   );
 };

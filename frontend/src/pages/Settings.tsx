@@ -165,8 +165,14 @@ const Settings = () => {
       </div>
 
       {/* Reset Confirmation Modal */}
-      <div id="reset-modal" className="hidden fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-        <div className="bg-white rounded-2xl p-8 max-w-md w-full mx-4 shadow-2xl">
+      <div id="reset-modal" className="hidden fixed inset-0 z-50 flex items-center justify-center p-4">
+        {/* Backdrop */}
+        <div className="fixed inset-0 bg-black/50 backdrop-blur-sm" onClick={() => {
+          document.getElementById('reset-modal')?.classList.add('hidden');
+        }}></div>
+
+        {/* Modal Content */}
+        <div className="relative bg-white rounded-2xl p-8 max-w-md w-full mx-4 shadow-2xl">
           <div className="flex items-center space-x-3 mb-6">
             <div className="w-12 h-12 bg-red-100 rounded-xl flex items-center justify-center">
               <AlertCircle className="w-6 h-6 text-red-600" />

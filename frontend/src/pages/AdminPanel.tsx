@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { workshopAPI, customerAPI } from '../services/api';
 import { ArrowLeft, Plus, Trash2, CheckCircle, XCircle, AlertCircle, Settings2 } from 'lucide-react';
 import api from '../services/api';
+import ConfirmModal from '../components/ConfirmModal';
 
 const AdminPanel = () => {
     const navigate = useNavigate();
@@ -36,6 +37,14 @@ const AdminPanel = () => {
         email: '',
         address: '',
     });
+
+    // Modal state
+    const [confirmModal, setConfirmModal] = useState<{
+        isOpen: boolean;
+        title: string;
+        message: string;
+        onConfirm: () => void;
+    }>({ isOpen: false, title: '', message: '', onConfirm: () => { } });
 
     const [presetForm, setPresetForm] = useState({
         price: '',
@@ -84,14 +93,20 @@ const AdminPanel = () => {
     };
 
     const handleDeleteWorkshop = async (id: number) => {
-        if (!confirm('Are you sure? This will delete all machines in this workshop!')) return;
-        try {
-            await api.delete(`/workshops/${id}`);
-            setSuccess('Workshop deleted successfully!');
-            fetchAllData();
-        } catch (err: any) {
-            setError(err.response?.data?.detail || 'Failed to delete workshop');
-        }
+        setConfirmModal({
+            isOpen: true,
+            title: 'Delete Workshop',
+            message: 'Are you sure? This will delete all machines in this workshop!',
+            onConfirm: async () => {
+                try {
+                    await api.delete(`/workshops/${id}`);
+                    setSuccess('Workshop deleted successfully!');
+                    fetchAllData();
+                } catch (err: any) {
+                    setError(err.response?.data?.detail || 'Failed to delete workshop');
+                }
+            }
+        });
     };
 
     // Machine handlers
@@ -116,14 +131,20 @@ const AdminPanel = () => {
     };
 
     const handleDeleteMachine = async (id: number) => {
-        if (!confirm('Are you sure you want to delete this machine?')) return;
-        try {
-            await api.delete(`/machines/${id}`);
-            setSuccess('Machine deleted successfully!');
-            fetchAllData();
-        } catch (err: any) {
-            setError(err.response?.data?.detail || 'Failed to delete machine');
-        }
+        setConfirmModal({
+            isOpen: true,
+            title: 'Delete Machine',
+            message: 'Are you sure you want to delete this machine?',
+            onConfirm: async () => {
+                try {
+                    await api.delete(`/machines/${id}`);
+                    setSuccess('Machine deleted successfully!');
+                    fetchAllData();
+                } catch (err: any) {
+                    setError(err.response?.data?.detail || 'Failed to delete machine');
+                }
+            }
+        });
     };
 
     // Customer handlers
@@ -144,14 +165,20 @@ const AdminPanel = () => {
     };
 
     const handleDeleteCustomer = async (id: number) => {
-        if (!confirm('Are you sure? This will affect all beams for this customer!')) return;
-        try {
-            await api.delete(`/customers/${id}`);
-            setSuccess('Customer deleted successfully!');
-            fetchAllData();
-        } catch (err: any) {
-            setError(err.response?.data?.detail || 'Failed to delete customer');
-        }
+        setConfirmModal({
+            isOpen: true,
+            title: 'Delete Customer',
+            message: 'Are you sure? This will affect all beams for this customer!',
+            onConfirm: async () => {
+                try {
+                    await api.delete(`/customers/${id}`);
+                    setSuccess('Customer deleted successfully!');
+                    fetchAllData();
+                } catch (err: any) {
+                    setError(err.response?.data?.detail || 'Failed to delete customer');
+                }
+            }
+        });
     };
 
     const handleStatusToggle = async (customerId: number, currentStatus: string) => {
@@ -187,14 +214,20 @@ const AdminPanel = () => {
     };
 
     const handleDeletePreset = async (id: number) => {
-        if (!confirm('Are you sure you want to delete this preset?')) return;
-        try {
-            await api.delete(`/design-presets/${id}`);
-            setSuccess('Preset deleted successfully!');
-            fetchAllData();
-        } catch (err: any) {
-            setError(err.response?.data?.detail || 'Failed to delete preset');
-        }
+        setConfirmModal({
+            isOpen: true,
+            title: 'Delete Preset',
+            message: 'Are you sure you want to delete this preset?',
+            onConfirm: async () => {
+                try {
+                    await api.delete(`/design-presets/${id}`);
+                    setSuccess('Preset deleted successfully!');
+                    fetchAllData();
+                } catch (err: any) {
+                    setError(err.response?.data?.detail || 'Failed to delete preset');
+                }
+            }
+        });
     };
 
     const tabs = [
@@ -394,6 +427,17 @@ const AdminPanel = () => {
                     )}
                 </div>
             </div>
+
+            {/* Confirm Modal */}
+            <ConfirmModal
+                isOpen={confirmModal.isOpen}
+                onClose={() => setConfirmModal({ ...confirmModal, isOpen: false })}
+                onConfirm={confirmModal.onConfirm}
+                title={confirmModal.title}
+                message={confirmModal.message}
+                confirmText="Delete"
+                type="danger"
+            />
         </div>
     );
 };

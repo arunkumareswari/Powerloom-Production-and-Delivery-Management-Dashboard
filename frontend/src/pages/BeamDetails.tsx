@@ -1,9 +1,10 @@
 import { useEffect, useState } from 'react';
 import { useParams, Link, useNavigate } from 'react-router-dom';
 import { beamAPI } from '../services/api';
-import { ArrowLeft, Calendar, Package, AlertCircle, DollarSign, XCircle } from 'lucide-react';
+import { ArrowLeft, Calendar, Package, AlertCircle, DollarSign, XCircle, Trash2 } from 'lucide-react';
 import { format } from 'date-fns';
 import api from '../services/api';
+import ConfirmModal from '../components/ConfirmModal';
 
 const BeamDetails = ({ isAdmin }: { isAdmin: boolean }) => {
   const { beamId } = useParams();
@@ -11,6 +12,14 @@ const BeamDetails = ({ isAdmin }: { isAdmin: boolean }) => {
   const [data, setData] = useState<any>(null);
   const [loading, setLoading] = useState(true);
   const [endingBeam, setEndingBeam] = useState(false);
+
+  // Modal state
+  const [confirmModal, setConfirmModal] = useState<{
+    isOpen: boolean;
+    title: string;
+    message: string;
+    onConfirm: () => void;
+  }>({ isOpen: false, title: '', message: '', onConfirm: () => { } });
 
   useEffect(() => {
     if (beamId) {
@@ -45,6 +54,23 @@ const BeamDetails = ({ isAdmin }: { isAdmin: boolean }) => {
     }
   };
 
+  const handleDeleteBeam = () => {
+    setConfirmModal({
+      isOpen: true,
+      title: 'Delete Beam',
+      message: `Are you sure you want to delete beam "${data?.beam?.beam_number}"? This action cannot be undone.`,
+      onConfirm: async () => {
+        try {
+          const isCompleted = data?.beam?.status === 'completed';
+          await api.delete(`/beams/${beamId}`);
+          navigate(isCompleted ? '/workshops?view=archive' : '/workshops');
+        } catch (error: any) {
+          alert(error.response?.data?.detail || 'Failed to delete beam');
+        }
+      }
+    });
+  };
+
   if (loading) {
     return (
       <div className="flex items-center justify-center h-96">
@@ -71,7 +97,7 @@ const BeamDetails = ({ isAdmin }: { isAdmin: boolean }) => {
       <div className="flex items-center justify-between">
         <div className="flex items-center space-x-4">
           <Link
-            to="/workshops"
+            to={beam.status === 'completed' ? '/workshops?view=archive' : '/workshops'}
             className="w-10 h-10 flex items-center justify-center rounded-xl bg-gray-100 hover:bg-gray-200 transition"
           >
             <ArrowLeft className="w-5 h-5" />
@@ -85,20 +111,31 @@ const BeamDetails = ({ isAdmin }: { isAdmin: boolean }) => {
         </div>
         <div className="flex items-center space-x-3">
           <span className={`px-4 py-2 rounded-xl font-semibold ${beam.status === 'active'
-              ? 'bg-green-100 text-green-700'
-              : 'bg-gray-100 text-gray-700'
+            ? 'bg-green-100 text-green-700'
+            : 'bg-gray-100 text-gray-700'
             }`}>
             {beam.status.toUpperCase()}
           </span>
-          {isAdmin && beam.status === 'active' && (
-            <button
-              onClick={handleEndBeam}
-              disabled={endingBeam}
-              className="flex items-center space-x-2 px-4 py-2 bg-red-500 text-white rounded-xl hover:bg-red-600 transition font-semibold disabled:opacity-50"
-            >
-              <XCircle className="w-4 h-4" />
-              <span>{endingBeam ? 'Ending...' : 'End Beam'}</span>
-            </button>
+          {isAdmin && (
+            <>
+              <button
+                onClick={handleDeleteBeam}
+                className="p-2 text-red-600 hover:bg-red-50 rounded-lg transition"
+                title="Delete Beam"
+              >
+                <Trash2 className="w-5 h-5" />
+              </button>
+              {beam.status === 'active' && (
+                <button
+                  onClick={handleEndBeam}
+                  disabled={endingBeam}
+                  className="flex items-center space-x-2 px-4 py-2 bg-red-500 text-white rounded-xl hover:bg-red-600 transition font-semibold disabled:opacity-50"
+                >
+                  <XCircle className="w-4 h-4" />
+                  <span>{endingBeam ? 'Ending...' : 'End Beam'}</span>
+                </button>
+              )}
+            </>
           )}
         </div>
       </div>
@@ -305,6 +342,17 @@ const BeamDetails = ({ isAdmin }: { isAdmin: boolean }) => {
           </div>
         )}
       </div>
+
+      {/* Confirm Modal */}
+      <ConfirmModal
+        isOpen={confirmModal.isOpen}
+        onClose={() => setConfirmModal({ ...confirmModal, isOpen: false })}
+        onConfirm={confirmModal.onConfirm}
+        title={confirmModal.title}
+        message={confirmModal.message}
+        confirmText="Delete"
+        type="danger"
+      />
     </div>
   );
 };

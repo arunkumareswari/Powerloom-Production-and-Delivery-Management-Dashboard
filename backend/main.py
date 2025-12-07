@@ -302,7 +302,7 @@ async def get_dashboard_overview(start_date: str = None, end_date: str = None, f
                COALESCE(SUM(d.damaged_pieces), 0) as total_damaged
         FROM deliveries d
         JOIN beam_starts b ON d.beam_id = b.id
-        JOIN machines m ON b.machine_id = m.id
+        LEFT JOIN machines m ON b.machine_id = m.id
         WHERE {date_filter} {fabric_filter}
     """)
     production = cursor.fetchone()
@@ -312,7 +312,7 @@ async def get_dashboard_overview(start_date: str = None, end_date: str = None, f
         SELECT COALESCE(SUM(d.total_amount), 0) as pending_amount
         FROM deliveries d
         JOIN beam_starts b ON d.beam_id = b.id
-        JOIN machines m ON b.machine_id = m.id
+        LEFT JOIN machines m ON b.machine_id = m.id
         WHERE {date_filter} {fabric_filter}
     """)
     pending = cursor.fetchone()
@@ -373,7 +373,7 @@ async def get_all_beams(status: str = "active"):
         SELECT b.*, 
                w.name as workshop_name,
                c.name as customer_name,
-               m.machine_number,
+               COALESCE(m.machine_number, 'N/A') as machine_number,
                COALESCE(SUM(d.good_pieces), 0) as total_good_pieces,
                COALESCE(SUM(d.damaged_pieces), 0) as total_damaged_pieces,
                COALESCE(SUM(d.meters_used), 0) as total_meters_used,
@@ -381,7 +381,7 @@ async def get_all_beams(status: str = "active"):
         FROM beam_starts b
         JOIN workshops w ON b.workshop_id = w.id
         JOIN customers c ON b.customer_id = c.id
-        JOIN machines m ON b.machine_id = m.id
+        LEFT JOIN machines m ON b.machine_id = m.id
         LEFT JOIN deliveries d ON b.id = d.beam_id
         WHERE b.status = %s
         GROUP BY b.id
@@ -416,11 +416,11 @@ async def get_beam_details(beam_id: int):
         SELECT b.*, 
                w.name as workshop_name,
                c.name as customer_name,
-               m.machine_number
+               COALESCE(m.machine_number, 'N/A') as machine_number
         FROM beam_starts b
         JOIN workshops w ON b.workshop_id = w.id
         JOIN customers c ON b.customer_id = c.id
-        JOIN machines m ON b.machine_id = m.id
+        LEFT JOIN machines m ON b.machine_id = m.id
         WHERE b.id = %s
     """, (beam_id,))
     beam = cursor.fetchone()
@@ -554,6 +554,36 @@ async def end_beam(beam_id: int, admin: str = Depends(verify_token)):
     conn.close()
     
     return {"message": "Beam ended successfully", "beam_id": beam_id}
+
+@app.delete("/api/beams/{beam_id}")
+async def delete_beam(beam_id: int, admin: str = Depends(verify_token)):
+    """Delete a beam"""
+    conn = get_db_connection()
+    cursor = conn.cursor()
+    
+    try:
+        # Check if beam exists
+        cursor.execute("SELECT id FROM beam_starts WHERE id = %s", (beam_id,))
+        if not cursor.fetchone():
+            raise HTTPException(status_code=404, detail="Beam not found")
+        
+        # Delete beam
+        cursor.execute("DELETE FROM beam_starts WHERE id = %s", (beam_id,))
+        conn.commit()
+        
+        cursor.close()
+        conn.close()
+        
+        return {"message": "Beam deleted successfully"}
+    
+    except HTTPException:
+        cursor.close()
+        conn.close()
+        raise
+    except Error as e:
+        cursor.close()
+        conn.close()
+        raise HTTPException(status_code=500, detail=f"Database error: {str(e)}")
 
 # ========================================
 # DELIVERY ENDPOINTS
