@@ -729,7 +729,33 @@ async def get_all_customers():
     conn = get_db_connection()
     cursor = conn.cursor(dictionary=True)
     
-    cursor.execute("SELECT * FROM customers WHERE is_active = TRUE ORDER BY name")
+    # Check if status column exists
+    cursor.execute("""
+        SELECT COUNT(*) as count
+        FROM information_schema.COLUMNS 
+        WHERE TABLE_SCHEMA = DATABASE() 
+        AND TABLE_NAME = 'customers' 
+        AND COLUMN_NAME = 'status'
+    """)
+    has_status = cursor.fetchone()['count'] > 0
+    
+    # Query with or without status based on column existence
+    if has_status:
+        cursor.execute("""
+            SELECT id, name, contact_person, phone, email, address, status
+            FROM customers 
+            WHERE is_active = TRUE 
+            ORDER BY name
+        """)
+    else:
+        cursor.execute("""
+            SELECT id, name, contact_person, phone, email, address,
+                   'active' as status
+            FROM customers 
+            WHERE is_active = TRUE 
+            ORDER BY name
+        """)
+    
     customers = cursor.fetchall()
     
     cursor.close()
@@ -773,8 +799,43 @@ async def delete_customer(customer_id: int, admin: str = Depends(verify_token)):
     cursor.close()
     conn.close()
     
-    return {"message": "Customer deleted successfully"}
+    return {"message": "Customer deleted"}
 
+@app.put("/api/customers/{customer_id}/status")
+async def update_customer_status(customer_id: int, request: dict, admin: str = Depends(verify_token)):
+    """Update customer status (active/inactive)"""
+    conn = get_db_connection()
+    cursor = conn.cursor()
+    
+    try:
+        status = request.get('status')
+        
+        # Validate status
+        if status not in ['active', 'inactive']:
+            raise HTTPException(status_code=400, detail="Invalid status. Must be 'active' or 'inactive'")
+        
+        # Update customer status
+        cursor.execute("""
+            UPDATE customers 
+            SET status = %s 
+            WHERE id = %s
+        """, (status, customer_id))
+        
+        conn.commit()
+        
+        cursor.close()
+        conn.close()
+        
+        return {"message": "Customer status updated successfully", "status": status}
+    
+    except HTTPException:
+        cursor.close()
+        conn.close()
+        raise
+    except Error as e:
+        cursor.close()
+        conn.close()
+        raise HTTPException(status_code=500, detail=f"Database error: {str(e)}")
 
 
 # ========================================

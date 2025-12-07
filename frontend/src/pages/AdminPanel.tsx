@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { workshopAPI, customerAPI } from '../services/api';
-import { ArrowLeft, Plus, Trash2, CheckCircle, AlertCircle, Settings2 } from 'lucide-react';
+import { ArrowLeft, Plus, Trash2, CheckCircle, XCircle, AlertCircle, Settings2 } from 'lucide-react';
 import api from '../services/api';
 
 const AdminPanel = () => {
@@ -151,6 +151,18 @@ const AdminPanel = () => {
             fetchAllData();
         } catch (err: any) {
             setError(err.response?.data?.detail || 'Failed to delete customer');
+        }
+    };
+
+    const handleStatusToggle = async (customerId: number, currentStatus: string) => {
+        const newStatus = currentStatus === 'active' ? 'inactive' : 'active';
+
+        try {
+            await api.put(`/customers/${customerId}/status`, { status: newStatus });
+            setSuccess(`Customer status updated to ${newStatus}!`);
+            fetchAllData();
+        } catch (err: any) {
+            setError(err.response?.data?.detail || 'Failed to update customer status');
         }
     };
 
@@ -317,13 +329,34 @@ const AdminPanel = () => {
                             </form>
                             <div className="overflow-x-auto">
                                 <table className="w-full">
-                                    <thead><tr className="border-b-2 border-gray-200"><th className="text-left py-3 px-4 font-semibold">Name</th><th className="text-left py-3 px-4 font-semibold">Phone</th><th className="text-left py-3 px-4 font-semibold">Email</th><th className="text-center py-3 px-4 font-semibold">Actions</th></tr></thead>
+                                    <thead><tr className="border-b-2 border-gray-200"><th className="text-left py-3 px-4 font-semibold">Name</th><th className="text-left py-3 px-4 font-semibold">Phone</th><th className="text-left py-3 px-4 font-semibold">Email</th><th className="text-left py-3 px-4 font-semibold">Status</th><th className="text-center py-3 px-4 font-semibold">Actions</th></tr></thead>
                                     <tbody>
                                         {customers.map((customer) => (
                                             <tr key={customer.id} className="border-b border-gray-100 hover:bg-gray-50">
                                                 <td className="py-3 px-4 font-semibold">{customer.name}</td>
                                                 <td className="py-3 px-4">{customer.phone || '-'}</td>
                                                 <td className="py-3 px-4">{customer.email || '-'}</td>
+                                                <td className="py-3 px-4">
+                                                    <button
+                                                        onClick={() => handleStatusToggle(customer.id, customer.status)}
+                                                        className={`inline-flex items-center space-x-1.5 px-3 py-1.5 rounded-full text-sm font-semibold transition-all hover:shadow-md ${customer.status === 'active'
+                                                            ? 'bg-green-100 text-green-700 hover:bg-green-200'
+                                                            : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
+                                                            }`}
+                                                    >
+                                                        {customer.status === 'active' ? (
+                                                            <>
+                                                                <CheckCircle className="w-4 h-4" />
+                                                                <span>Active</span>
+                                                            </>
+                                                        ) : (
+                                                            <>
+                                                                <XCircle className="w-4 h-4" />
+                                                                <span>Inactive</span>
+                                                            </>
+                                                        )}
+                                                    </button>
+                                                </td>
                                                 <td className="py-3 px-4 text-center"><button onClick={() => handleDeleteCustomer(customer.id)} className="inline-flex items-center space-x-1 px-3 py-1 text-red-600 hover:bg-red-50 rounded-lg transition"><Trash2 className="w-4 h-4" /><span className="text-sm">Delete</span></button></td>
                                             </tr>
                                         ))}
