@@ -481,6 +481,20 @@ async def start_new_beam(beam: BeamStartCreate, admin: str = Depends(verify_toke
         if not machine:
             raise HTTPException(status_code=404, detail="Machine not found")
         
+        # Check if machine already has an active beam
+        cursor.execute("""
+            SELECT beam_number 
+            FROM beam_starts 
+            WHERE machine_id = %s AND status = 'active'
+        """, (beam.machine_id,))
+        existing_beam = cursor.fetchone()
+        
+        if existing_beam:
+            raise HTTPException(
+                status_code=400, 
+                detail=f"Machine already has an active beam '{existing_beam[0]}'. Please complete or end the current beam first."
+            )
+        
         # Insert beam with customer_id from request
         cursor.execute("""
             INSERT INTO beam_starts 
@@ -797,6 +811,20 @@ async def create_machine(machine: MachineCreate, admin: str = Depends(verify_tok
     cursor = conn.cursor()
     
     try:
+        # Check if machine number already exists in this workshop
+        cursor.execute("""
+            SELECT machine_number 
+            FROM machines 
+            WHERE workshop_id = %s AND machine_number = %s
+        """, (machine.workshop_id, machine.machine_number))
+        existing_machine = cursor.fetchone()
+        
+        if existing_machine:
+            raise HTTPException(
+                status_code=400, 
+                detail=f"Machine {machine.machine_number} already exists in this workshop. Please use a different machine number."
+            )
+        
         cursor.execute("""
             INSERT INTO machines (workshop_id, machine_number, fabric_type)
             VALUES (%s, %s, %s)
@@ -809,7 +837,13 @@ async def create_machine(machine: MachineCreate, admin: str = Depends(verify_tok
         conn.close()
         
         return {"message": "Machine created successfully", "machine_id": machine_id}
+    except HTTPException:
+        cursor.close()
+        conn.close()
+        raise
     except Error as e:
+        cursor.close()
+        conn.close()
         raise HTTPException(status_code=400, detail=f"Failed to create machine: {str(e)}")
 
 @app.delete("/api/machines/{machine_id}")
