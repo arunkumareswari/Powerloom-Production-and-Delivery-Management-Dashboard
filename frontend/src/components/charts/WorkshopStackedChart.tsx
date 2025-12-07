@@ -93,14 +93,24 @@ const WorkshopProductionChart = ({ filterType, fabricType, startDate, endDate }:
     }
 
     return (
-        <div className="bg-white rounded-2xl p-6 shadow-lg hover:shadow-xl transition-shadow">
-            <div className="mb-6">
-                <h3 className="text-xl font-bold text-gray-900">Workshop Production</h3>
-                <p className="text-sm text-gray-600 mt-1">Machine-wise production by workshop</p>
+        <div className="bg-white rounded-2xl p-4 shadow-lg hover:shadow-xl transition-shadow h-full">
+            <div className="mb-4 flex justify-between items-start">
+                <div>
+                    <h3 className="text-xl font-bold text-gray-900">Workshop Production</h3>
+                    <p className="text-sm text-gray-600 mt-1">Machine-wise production by workshop</p>
+                </div>
+                <div className="grid grid-cols-2 gap-x-4 gap-y-1 text-sm">
+                    {machineKeys.map((machineKey, index) => (
+                        <div key={machineKey} className="flex items-center gap-2">
+                            <span className="w-3 h-3 rounded-full" style={{ backgroundColor: MACHINE_COLORS[index % MACHINE_COLORS.length] }}></span>
+                            <span className="text-gray-600">Machine {machineKey.replace('machine_', '')}</span>
+                        </div>
+                    ))}
+                </div>
             </div>
 
-            <ResponsiveContainer width="100%" height={350}>
-                <BarChart data={data} margin={{ top: 20, right: 30, left: 20, bottom: 5 }} barGap={8}>
+            <ResponsiveContainer width="100%" height={320}>
+                <BarChart data={data} margin={{ top: 20, right: 10, left: -10, bottom: 5 }} barGap={4}>
                     <CartesianGrid strokeDasharray="3 3" stroke="#e5e7eb" vertical={false} />
                     <XAxis
                         dataKey="workshop_name"
@@ -124,11 +134,22 @@ const WorkshopProductionChart = ({ filterType, fabricType, startDate, endDate }:
                             padding: '12px 16px'
                         }}
                         cursor={{ fill: 'rgba(59, 130, 246, 0.1)' }}
-                    />
-                    <Legend
-                        wrapperStyle={{ paddingTop: '20px' }}
-                        iconType="circle"
-                        iconSize={10}
+                        content={({ payload }) => {
+                            if (!payload || payload.length === 0) return null;
+                            const total = payload.reduce((sum: number, p: any) => sum + (p.value || 0), 0);
+                            return (
+                                <div style={{ backgroundColor: 'white', padding: '12px 16px', borderRadius: '12px', boxShadow: '0 10px 15px -3px rgba(0, 0, 0, 0.1)' }}>
+                                    <p style={{ fontWeight: 'bold', color: '#374151', fontSize: '14px', marginBottom: '8px' }}>
+                                        Total Count: {total}
+                                    </p>
+                                    {payload.map((p: any, idx: number) => (
+                                        <p key={idx} style={{ color: p.color, fontSize: '13px', margin: '4px 0' }}>
+                                            {p.name}: {p.value}
+                                        </p>
+                                    ))}
+                                </div>
+                            );
+                        }}
                     />
 
                     {/* Dynamic bars based on actual machines */}
@@ -143,25 +164,6 @@ const WorkshopProductionChart = ({ filterType, fabricType, startDate, endDate }:
                     ))}
                 </BarChart>
             </ResponsiveContainer>
-
-            <div className="mt-6 pt-6 border-t border-gray-200">
-                <div className="grid grid-cols-3 gap-4">
-                    {data.map((workshop, idx) => {
-                        const totalProduction = workshop.machines.reduce((sum, m) => sum + m.production, 0);
-                        return (
-                            <div key={idx} className="text-center">
-                                <p className="text-xs text-gray-500 uppercase tracking-wide font-medium">{workshop.workshop_name}</p>
-                                <p className="text-lg font-bold text-gray-900 mt-1">
-                                    {totalProduction.toLocaleString()}
-                                </p>
-                                <p className="text-xs text-gray-600 mt-1">
-                                    {workshop.machines.length} machine{workshop.machines.length !== 1 ? 's' : ''}
-                                </p>
-                            </div>
-                        );
-                    })}
-                </div>
-            </div>
         </div>
     );
 };

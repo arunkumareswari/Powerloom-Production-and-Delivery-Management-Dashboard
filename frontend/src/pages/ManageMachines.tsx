@@ -163,7 +163,7 @@ const ManageMachines = () => {
                 className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-primary-500 focus:border-transparent outline-none"
                 required
               >
-                <option value="vesti">Vesti</option>
+                <option value="vesti">Veshti</option>
                 <option value="saree">Saree</option>
               </select>
             </div>
@@ -207,8 +207,8 @@ const ManageMachines = () => {
                   </td>
                   <td className="py-3 px-4">
                     <span className={`px-3 py-1 text-xs rounded-full font-semibold ${machine.is_active
-                        ? 'bg-green-100 text-green-700'
-                        : 'bg-gray-100 text-gray-700'
+                      ? 'bg-green-100 text-green-700'
+                      : 'bg-gray-100 text-gray-700'
                       }`}>
                       {machine.is_active ? 'Active' : 'Inactive'}
                     </span>
@@ -234,7 +234,7 @@ const ManageMachines = () => {
         <h4 className="font-semibold text-blue-900 mb-2">ℹ️ Important Notes:</h4>
         <ul className="text-sm text-blue-800 space-y-1 list-disc list-inside">
           <li>Machine numbers should be unique within each workshop</li>
-          <li>Fabric type (Vesti/Saree) is fixed per machine</li>
+          <li>Fabric type (Veshti/Saree) is fixed per machine</li>
           <li>Deleting a machine will fail if it has active beams</li>
         </ul>
       </div>

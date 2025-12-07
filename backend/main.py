@@ -289,8 +289,8 @@ async def get_dashboard_overview(start_date: str = None, end_date: str = None, f
         # Default to current month
         date_filter = "MONTH(delivery_date) = MONTH(CURRENT_DATE()) AND YEAR(delivery_date) = YEAR(CURRENT_DATE())"
     
-    # Build fabric filter condition - fabric_type is in beam_starts table
-    fabric_filter = f"AND b.fabric_type = '{fabric_type}'" if fabric_type else ""
+    # Build fabric filter condition
+    fabric_filter = f"AND m.fabric_type = '{fabric_type}'" if fabric_type else ""
     
     # Active beams count
     cursor.execute("SELECT COUNT(*) as count FROM beam_starts WHERE status = 'active'")
@@ -302,6 +302,7 @@ async def get_dashboard_overview(start_date: str = None, end_date: str = None, f
                COALESCE(SUM(d.damaged_pieces), 0) as total_damaged
         FROM deliveries d
         JOIN beam_starts b ON d.beam_id = b.id
+        JOIN machines m ON b.machine_id = m.id
         WHERE {date_filter} {fabric_filter}
     """)
     production = cursor.fetchone()
@@ -311,22 +312,24 @@ async def get_dashboard_overview(start_date: str = None, end_date: str = None, f
         SELECT COALESCE(SUM(d.total_amount), 0) as pending_amount
         FROM deliveries d
         JOIN beam_starts b ON d.beam_id = b.id
+        JOIN machines m ON b.machine_id = m.id
         WHERE {date_filter} {fabric_filter}
     """)
     pending = cursor.fetchone()
     
-    # Build fabric WHERE filter
-    fabric_where_filter = f"AND b.fabric_type = '{fabric_type}'" if fabric_type else ""
+    # Build fabric JOIN filter for LEFT JOIN queries
+    fabric_join_filter = f"AND m.fabric_type = '{fabric_type}'" if fabric_type else ""
     
     # Workshop-wise production with date and fabric filter
+    # Use INNER JOIN when fabric filter is active to hide workshops without that fabric
+    join_type = "INNER JOIN" if fabric_type else "LEFT JOIN"
     cursor.execute(f"""
         SELECT w.name as workshop_name, 
                COALESCE(SUM(d.good_pieces), 0) as total_pieces
         FROM workshops w
-        LEFT JOIN machines m ON w.id = m.workshop_id
-        LEFT JOIN beam_starts b ON m.id = b.machine_id
-        LEFT JOIN deliveries d ON b.id = d.beam_id
-        WHERE ({date_filter} OR d.id IS NULL) {fabric_where_filter}
+        {join_type} beam_starts b ON w.id = b.workshop_id
+        {join_type} machines m ON b.machine_id = m.id {fabric_join_filter}
+        LEFT JOIN deliveries d ON b.id = d.beam_id AND {date_filter}
         GROUP BY w.id, w.name
         HAVING total_pieces > 0
     """)
@@ -339,8 +342,8 @@ async def get_dashboard_overview(start_date: str = None, end_date: str = None, f
                COALESCE(SUM(d.total_amount), 0) as total_amount
         FROM customers c
         LEFT JOIN beam_starts b ON c.id = b.customer_id
-        LEFT JOIN deliveries d ON b.id = d.beam_id
-        WHERE ({date_filter} OR d.id IS NULL) {fabric_where_filter}
+        LEFT JOIN machines m ON b.machine_id = m.id {fabric_join_filter}
+        LEFT JOIN deliveries d ON b.id = d.beam_id AND {date_filter}
         GROUP BY c.id, c.name
     """)
     customer_summary = cursor.fetchall()
@@ -363,14 +366,17 @@ async def get_dashboard_overview(start_date: str = None, end_date: str = None, f
 
 
 @app.get("/api/analytics/production-trend")
-async def get_production_trend(days: int = 30):
+async def get_production_trend(days: int = 30, fabric_type: str = None):
     """Get daily production trend with workshop breakdown"""
     conn = get_db_connection()
     cursor = conn.cursor(dictionary=True)
     
     try:
+        # Build fabric filter
+        fabric_filter = f"AND m.fabric_type = '{fabric_type}'" if fabric_type else ""
+        
         # Get workshop-wise daily production for the last N days
-        cursor.execute("""
+        cursor.execute(f"""
             SELECT 
                 DATE(d.delivery_date) as date,
                 w.name as workshop_name,
@@ -381,7 +387,7 @@ async def get_production_trend(days: int = 30):
             JOIN beam_starts b ON d.beam_id = b.id
             JOIN machines m ON b.machine_id = m.id
             JOIN workshops w ON m.workshop_id = w.id
-            WHERE d.delivery_date >= DATE_SUB(CURDATE(), INTERVAL %s DAY)
+            WHERE d.delivery_date >= DATE_SUB(CURDATE(), INTERVAL %s DAY) {fabric_filter}
             GROUP BY DATE(d.delivery_date), w.id, w.name
             ORDER BY date ASC, w.name
         """, (days,))
@@ -463,13 +469,17 @@ async def get_fabric_distribution():
 
 
 @app.get("/api/analytics/machine-quality")
-async def get_machine_quality():
+async def get_machine_quality(fabric_type: str = None):
     """Get machine-wise quality data (good vs damaged pieces)"""
     conn = get_db_connection()
     cursor = conn.cursor(dictionary=True)
     
     try:
-        cursor.execute("""
+        # Build fabric filter
+        fabric_filter = f"WHERE m.fabric_type = '{fabric_type}'" if fabric_type else ""
+        having_clause = "HAVING total_pieces > 0" if not fabric_filter else "AND total_pieces > 0"
+        
+        cursor.execute(f"""
             SELECT 
                 w.name as workshop_name,
                 m.machine_number,
@@ -481,6 +491,7 @@ async def get_machine_quality():
             JOIN workshops w ON m.workshop_id = w.id
             LEFT JOIN beam_starts b ON m.id = b.machine_id
             LEFT JOIN deliveries d ON b.id = d.beam_id
+            {fabric_filter}
             GROUP BY w.id, w.name, m.id, m.machine_number
             HAVING total_pieces > 0
             ORDER BY w.name, m.machine_number
@@ -503,15 +514,17 @@ async def get_machine_quality():
 # ========================================
 
 @app.get("/api/analytics/workshop-machine-production")
-async def get_workshop_machine_production():
+async def get_workshop_machine_production(fabric_type: str = None):
     """Get machine-wise production data for each workshop"""
     conn = get_db_connection()
     cursor = conn.cursor(dictionary=True)
     
     try:
+        # Build fabric filter
+        fabric_filter = f"AND m.fabric_type = '{fabric_type}'" if fabric_type else ""
+        
         # Get all ACTIVE workshops with their machines and production
-        # Only include workshops that have at least one machine or are currently in the workshops table
-        cursor.execute("""
+        cursor.execute(f"""
             SELECT 
                 w.id as workshop_id,
                 w.name as workshop_name,
@@ -519,7 +532,7 @@ async def get_workshop_machine_production():
                 m.machine_number,
                 COALESCE(SUM(d.good_pieces + d.damaged_pieces), 0) as total_production
             FROM workshops w
-            LEFT JOIN machines m ON w.id = m.workshop_id
+            LEFT JOIN machines m ON w.id = m.workshop_id {fabric_filter}
             LEFT JOIN beam_starts b ON m.id = b.machine_id
             LEFT JOIN deliveries d ON b.id = d.beam_id
             GROUP BY w.id, w.name, m.id, m.machine_number

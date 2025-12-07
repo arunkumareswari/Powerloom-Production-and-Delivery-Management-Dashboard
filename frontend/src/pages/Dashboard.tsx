@@ -2,9 +2,7 @@ import { useEffect, useState } from 'react';
 import { dashboardAPI } from '../services/api';
 import { TrendingUp, AlertCircle, Package, DollarSign } from 'lucide-react';
 import ProductionTrendChart from '../components/charts/ProductionTrendChart';
-import FabricDistributionChart from '../components/charts/FabricDistributionChart';
 import WorkshopStackedChart from '../components/charts/WorkshopStackedChart';
-import ComparisonChart from '../components/charts/ComparisonChart';
 import QualityChart from '../components/charts/QualityChart';
 
 interface DashboardData {
@@ -16,7 +14,7 @@ interface DashboardData {
   customer_summary: any[];
 }
 
-const Dashboard = ({ isAdmin }: { isAdmin: boolean }) => {
+const Dashboard = () => {
   const [data, setData] = useState<DashboardData | null>(null);
   const [loading, setLoading] = useState(true);
   const [filterType, setFilterType] = useState<'all' | 'month' | 'custom'>('month');
@@ -114,7 +112,7 @@ const Dashboard = ({ isAdmin }: { isAdmin: boolean }) => {
             className="px-4 py-2 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-primary-500"
           >
             <option value="all">All Fabrics</option>
-            <option value="vesti">Vesti</option>
+            <option value="vesti">Veshti</option>
             <option value="saree">Saree</option>
           </select>
         </div>

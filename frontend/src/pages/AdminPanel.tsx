@@ -287,7 +287,7 @@ const AdminPanel = () => {
                                     <input type="text" placeholder="Workshop Name *" value={workshopForm.name} onChange={(e) => setWorkshopForm({ ...workshopForm, name: e.target.value })} className="px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-primary-500 outline-none" required />
                                     <input type="text" placeholder="Location" value={workshopForm.location} onChange={(e) => setWorkshopForm({ ...workshopForm, location: e.target.value })} className="px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-primary-500 outline-none" />
                                     <select value={workshopForm.workshop_type} onChange={(e) => setWorkshopForm({ ...workshopForm, workshop_type: e.target.value })} className="px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-primary-500 outline-none md:col-span-2">
-                                        <option value="vesti">Vesti</option>
+                                        <option value="vesti">Veshti</option>
                                         <option value="saree">Saree</option>
                                         <option value="mixed">Mixed</option>
                                     </select>
@@ -322,9 +322,9 @@ const AdminPanel = () => {
                                         <option value="">Select Workshop *</option>
                                         {workshops.map((workshop) => (<option key={workshop.id} value={workshop.id}>{workshop.name}</option>))}
                                     </select>
-                                    <input type="number" placeholder="Machine Number *" value={machineForm.machine_number} onChange={(e) => setMachineForm({ ...machineForm, machine_number: e.target.value })} className="px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-primary-500 outline-none" required />
+                                    <input type="text" placeholder="Machine Number *" value={machineForm.machine_number} onChange={(e) => setMachineForm({ ...machineForm, machine_number: e.target.value })} className="px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-primary-500 outline-none" required />
                                     <select value={machineForm.fabric_type} onChange={(e) => setMachineForm({ ...machineForm, fabric_type: e.target.value })} className="px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-primary-500 outline-none">
-                                        <option value="vesti">Vesti</option>
+                                        <option value="vesti">Veshti</option>
                                         <option value="saree">Saree</option>
                                     </select>
                                 </div>
@@ -404,7 +404,7 @@ const AdminPanel = () => {
                             <form onSubmit={handleAddPreset} className="bg-gray-50 rounded-xl p-6 space-y-4">
                                 <h3 className="font-semibold text-lg flex items-center space-x-2"><Plus className="w-5 h-5" /><span>Add New Design Preset</span></h3>
                                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                                    <input type="text" placeholder="Label (e.g., Vest-1)" value={presetForm.label} onChange={(e) => setPresetForm({ ...presetForm, label: e.target.value })} className="px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-primary-500 outline-none" required />
+                                    <input type="text" placeholder="Label (e.g., Veshti-1)" value={presetForm.label} onChange={(e) => setPresetForm({ ...presetForm, label: e.target.value })} className="px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-primary-500 outline-none" required />
                                     <input type="text" inputMode="decimal" placeholder="Price (₹) *" value={presetForm.price} onChange={(e) => setPresetForm({ ...presetForm, price: e.target.value })} className="px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-primary-500 outline-none" required />
                                 </div>
                                 <button type="submit" disabled={loading} className="w-full px-6 py-3 bg-primary-500 text-white rounded-xl hover:bg-primary-600 transition font-semibold disabled:opacity-50">{loading ? 'Adding...' : 'Add Preset'}</button>

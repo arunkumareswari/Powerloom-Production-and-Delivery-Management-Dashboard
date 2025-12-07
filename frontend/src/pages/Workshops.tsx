@@ -295,7 +295,7 @@ const Workshops = ({ isAdmin }: { isAdmin: boolean }) => {
                   className="w-full px-3 py-1.5 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent outline-none"
                 >
                   <option value="">All Fabrics</option>
-                  <option value="vesti">Vesti</option>
+                  <option value="vesti">Veshti</option>
                   <option value="saree">Saree</option>
                 </select>
               </div>
@@ -517,7 +517,7 @@ const Workshops = ({ isAdmin }: { isAdmin: boolean }) => {
                     {hasBeam && remainingPercentage < 20 && (
                       <AlertTriangle className="w-6 h-6 text-red-500" />
                     )}
-                    {hasBeam && (
+                    {isAdmin && hasBeam && (
                       <button
                         onClick={() => handleDeleteBeam(machine.beam_id, machine.beam_number)}
                         className="p-2 text-red-600 hover:bg-red-50 rounded-lg transition"

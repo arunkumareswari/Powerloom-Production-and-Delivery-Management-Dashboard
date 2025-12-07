@@ -79,16 +79,26 @@ const ProductionTrendChart = ({ filterType, fabricType, startDate, endDate }: Fi
     }
 
     return (
-        <div className="bg-white rounded-2xl p-6 shadow-lg hover:shadow-xl transition-shadow">
-            {/* Header */}
-            <div className="mb-6">
-                <h3 className="text-xl font-bold text-gray-900">Production Trend</h3>
-                <p className="text-sm text-gray-600 mt-1">Workshop-wise production over time</p>
+        <div className="bg-white rounded-2xl p-4 shadow-lg hover:shadow-xl transition-shadow h-full">
+            {/* Header with Legend */}
+            <div className="mb-4 flex justify-between items-start">
+                <div>
+                    <h3 className="text-xl font-bold text-gray-900">Production Trend</h3>
+                    <p className="text-sm text-gray-600 mt-1">Workshop-wise production over time</p>
+                </div>
+                <div className="flex flex-col gap-1 text-sm">
+                    {[...workshopKeys].sort().map((workshop, index) => (
+                        <div key={workshop} className="flex items-center gap-2">
+                            <span className="w-3 h-3 rounded-full" style={{ backgroundColor: WORKSHOP_COLORS[workshopKeys.indexOf(workshop) % WORKSHOP_COLORS.length] }}></span>
+                            <span className="text-gray-600">{workshop}</span>
+                        </div>
+                    ))}
+                </div>
             </div>
 
             {/* Modern Area Chart */}
-            <ResponsiveContainer width="100%" height={350}>
-                <AreaChart data={data} margin={{ top: 10, right: 30, left: 0, bottom: 0 }}>
+            <ResponsiveContainer width="100%" height={320}>
+                <AreaChart data={data} margin={{ top: 10, right: 10, left: -10, bottom: 0 }}>
                     <defs>
                         {workshopKeys.map((workshop, index) => (
                             <linearGradient key={workshop} id={`color${index}`} x1="0" y1="0" x2="0" y2="1">
@@ -127,11 +137,6 @@ const ProductionTrendChart = ({ filterType, fabricType, startDate, endDate }: Fi
                         labelStyle={{ fontWeight: 600, marginBottom: '8px', color: '#111827' }}
                         itemStyle={{ padding: '4px 0' }}
                     />
-                    <Legend
-                        wrapperStyle={{ paddingTop: '24px' }}
-                        iconType="circle"
-                        iconSize={10}
-                    />
 
                     {/* Dynamic areas for each workshop */}
                     {workshopKeys.map((workshop, index) => (
@@ -147,21 +152,6 @@ const ProductionTrendChart = ({ filterType, fabricType, startDate, endDate }: Fi
                     ))}
                 </AreaChart>
             </ResponsiveContainer>
-
-            {/* Summary Stats */}
-            <div className={`grid grid-cols-${Math.min(workshopKeys.length, 4)} gap-4 mt-6 pt-6 border-t border-gray-200`}>
-                {workshopKeys.map((workshop, index) => {
-                    const total = data.reduce((sum, d) => sum + (d[workshop] || 0), 0);
-                    return (
-                        <div key={workshop} className="text-center">
-                            <p className="text-xs text-gray-500 uppercase tracking-wide font-medium">{workshop}</p>
-                            <p className="text-2xl font-bold mt-2" style={{ color: WORKSHOP_COLORS[index % WORKSHOP_COLORS.length] }}>
-                                {total.toLocaleString()}
-                            </p>
-                        </div>
-                    );
-                })}
-            </div>
         </div>
     );
 };

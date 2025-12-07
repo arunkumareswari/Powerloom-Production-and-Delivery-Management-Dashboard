@@ -62,9 +62,21 @@ const QualityChart = ({ filterType, fabricType, startDate, endDate }: FilterProp
 
     return (
         <div className="bg-white rounded-2xl p-6 shadow-lg hover:shadow-xl transition-shadow">
-            <div className="mb-6">
-                <h3 className="text-xl font-bold text-gray-900">Machine Quality Analysis</h3>
-                <p className="text-sm text-gray-600 mt-1">Good vs Damaged pieces by machine</p>
+            <div className="mb-6 flex justify-between items-start">
+                <div>
+                    <h3 className="text-xl font-bold text-gray-900">Machine Quality Analysis</h3>
+                    <p className="text-sm text-gray-600 mt-1">Good vs Damaged pieces by machine</p>
+                </div>
+                <div className="flex flex-col gap-2 text-sm">
+                    <div className="flex items-center gap-2">
+                        <span className="w-3 h-3 rounded-full" style={{ backgroundColor: '#41b8d5' }}></span>
+                        <span className="text-gray-600">Good Pieces</span>
+                    </div>
+                    <div className="flex items-center gap-2">
+                        <span className="w-3 h-3 rounded-full" style={{ backgroundColor: '#6ce5e8' }}></span>
+                        <span className="text-gray-600">Damaged Pieces</span>
+                    </div>
+                </div>
             </div>
 
             <ResponsiveContainer width="100%" height={350}>
@@ -96,26 +108,21 @@ const QualityChart = ({ filterType, fabricType, startDate, endDate }: FilterProp
                         }}
                         cursor={{ fill: 'rgba(59, 130, 246, 0.1)' }}
                     />
-                    <Legend
-                        wrapperStyle={{ paddingTop: '20px' }}
-                        iconType="circle"
-                        iconSize={10}
-                    />
 
-                    {/* Stacked bars - good at bottom, damaged on top */}
-                    <Bar
-                        dataKey="good_pieces"
-                        stackId="a"
-                        fill="#10b981"
-                        radius={[0, 0, 0, 0]}
-                        name="Good Pieces"
-                    />
+                    {/* Stacked bars - damaged at bottom, good on top */}
                     <Bar
                         dataKey="damaged_pieces"
                         stackId="a"
-                        fill="#ef4444"
-                        radius={[8, 8, 0, 0]}
+                        fill="#6ce5e8"
+                        radius={[0, 0, 0, 0]}
                         name="Damaged Pieces"
+                    />
+                    <Bar
+                        dataKey="good_pieces"
+                        stackId="a"
+                        fill="#41b8d5"
+                        radius={[8, 8, 0, 0]}
+                        name="Good Pieces"
                     />
                 </BarChart>
             </ResponsiveContainer>

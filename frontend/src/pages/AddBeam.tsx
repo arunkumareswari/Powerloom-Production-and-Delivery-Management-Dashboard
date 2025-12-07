@@ -254,7 +254,7 @@ const AddBeam = () => {
                 }
               }}
               className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-primary-500 focus:border-transparent outline-none"
-              placeholder="4 (vesti) or 6 (saree)"
+              placeholder="4 (veshti) or 6 (saree)"
               required
             />
             <p className="text-xs text-gray-500 mt-1">Meters per piece</p>
