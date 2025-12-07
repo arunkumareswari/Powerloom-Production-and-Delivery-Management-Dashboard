@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 import { workshopAPI } from '../services/api';
-import { Factory, AlertTriangle, Archive } from 'lucide-react';
+import { Factory, AlertTriangle, Archive, ArrowUp, ArrowDown } from 'lucide-react';
 import { Link, useNavigate } from 'react-router-dom';
 import api from '../services/api';
 
@@ -12,6 +12,22 @@ const Workshops = ({ isAdmin }: { isAdmin: boolean }) => {
   const [loading, setLoading] = useState(true);
   const [showArchive, setShowArchive] = useState(false);
   const [archivedBeams, setArchivedBeams] = useState<any[]>([]);
+
+  // Filter state
+  const [filters, setFilters] = useState({
+    customer: '',
+    workshop: '',
+    machine: '',
+    fabric: '',
+    startDate: '',
+    endDate: ''
+  });
+
+  // Sort state
+  const [sortConfig, setSortConfig] = useState<{ key: string, direction: 'asc' | 'desc' }>({
+    key: 'start_date',
+    direction: 'desc'
+  });
 
   useEffect(() => {
     fetchWorkshops();
@@ -50,6 +66,60 @@ const Workshops = ({ isAdmin }: { isAdmin: boolean }) => {
     } catch (error) {
       console.error('Error fetching machines:', error);
     }
+  };
+
+  // Get unique values for filter dropdowns
+  const uniqueCustomers = [...new Set(archivedBeams.map(b => b.customer_name))].sort();
+  const uniqueWorkshops = [...new Set(archivedBeams.map(b => b.workshop_name))].sort();
+  const uniqueMachines = [...new Set(archivedBeams.map(b => b.machine_number))].sort((a, b) => a - b);
+
+  // Filter beams
+  const filteredBeams = archivedBeams.filter(beam => {
+    if (filters.customer && beam.customer_name !== filters.customer) return false;
+    if (filters.workshop && beam.workshop_name !== filters.workshop) return false;
+    if (filters.machine && beam.machine_number.toString() !== filters.machine) return false;
+    if (filters.fabric && beam.fabric_type !== filters.fabric) return false;
+    if (filters.startDate && beam.start_date < filters.startDate) return false;
+    if (filters.endDate && beam.end_date && beam.end_date > filters.endDate) return false;
+    return true;
+  });
+
+  // Sort beams
+  const sortedBeams = [...filteredBeams].sort((a, b) => {
+    let aValue = a[sortConfig.key];
+    let bValue = b[sortConfig.key];
+
+    // Handle null/undefined values
+    if (aValue === null || aValue === undefined) aValue = '';
+    if (bValue === null || bValue === undefined) bValue = '';
+
+    if (aValue < bValue) {
+      return sortConfig.direction === 'asc' ? -1 : 1;
+    }
+    if (aValue > bValue) {
+      return sortConfig.direction === 'asc' ? 1 : -1;
+    }
+    return 0;
+  });
+
+  // Handle sort
+  const handleSort = (key: string) => {
+    setSortConfig(prev => ({
+      key,
+      direction: prev.key === key && prev.direction === 'asc' ? 'desc' : 'asc'
+    }));
+  };
+
+  // Clear filters
+  const clearFilters = () => {
+    setFilters({
+      customer: '',
+      workshop: '',
+      machine: '',
+      fabric: '',
+      startDate: '',
+      endDate: ''
+    });
   };
 
   if (loading) {
@@ -119,64 +189,252 @@ const Workshops = ({ isAdmin }: { isAdmin: boolean }) => {
 
       {/* Archived Beams Table */}
       {showArchive ? (
-        <div className="bg-white rounded-2xl shadow-soft overflow-hidden">
-          {archivedBeams.length === 0 ? (
-            <div className="p-12 text-center">
-              <Archive className="w-16 h-16 text-gray-300 mx-auto mb-4" />
-              <h3 className="text-xl font-semibold text-gray-700 mb-2">No Archived Beams</h3>
-              <p className="text-gray-500">Completed beams will appear here</p>
-            </div>
-          ) : (
-            <div className="overflow-x-auto">
-              <table className="w-full">
-                <thead className="bg-gray-50 border-b-2 border-gray-200">
-                  <tr>
-                    <th className="text-left py-4 px-6 font-semibold text-gray-700">Beam Number</th>
-                    <th className="text-left py-4 px-6 font-semibold text-gray-700">Workshop</th>
-                    <th className="text-left py-4 px-6 font-semibold text-gray-700">Customer</th>
-                    <th className="text-left py-4 px-6 font-semibold text-gray-700">Machine</th>
-                    <th className="text-left py-4 px-6 font-semibold text-gray-700">Total Meters</th>
-                    <th className="text-left py-4 px-6 font-semibold text-gray-700">Start Date</th>
-                    <th className="text-left py-4 px-6 font-semibold text-gray-700">End Date</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {archivedBeams.map((beam) => (
-                    <tr
-                      key={beam.id}
-                      onClick={() => navigate(`/beams/${beam.id}`)}
-                      className="border-b border-gray-100 hover:bg-gray-50 cursor-pointer transition"
-                    >
-                      <td className="py-4 px-6">
-                        <span className="font-semibold text-gray-900">{beam.beam_number}</span>
-                      </td>
-                      <td className="py-4 px-6">
-                        <span className="text-gray-700">{beam.workshop_name}</span>
-                      </td>
-                      <td className="py-4 px-6">
-                        <span className="text-gray-700">{beam.customer_name}</span>
-                      </td>
-                      <td className="py-4 px-6">
-                        <span className="px-3 py-1 bg-blue-100 text-blue-700 text-sm rounded-full font-semibold">
-                          Machine {beam.machine_number}
-                        </span>
-                      </td>
-                      <td className="py-4 px-6">
-                        <span className="text-gray-700 font-medium">{beam.total_beam_meters}m</span>
-                      </td>
-                      <td className="py-4 px-6">
-                        <span className="text-gray-700">{beam.start_date}</span>
-                      </td>
-                      <td className="py-4 px-6">
-                        <span className="text-gray-700">{beam.end_date || '-'}</span>
-                      </td>
-                    </tr>
+        <>
+          {/* Filter Section */}
+          <div className="bg-white rounded-2xl p-4 shadow-soft mb-6">
+            <div className="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-6 gap-3 mb-3">
+              {/* Customer Filter */}
+              <div>
+                <label className="block text-xs font-medium text-gray-700 mb-1">Customer</label>
+                <select
+                  value={filters.customer}
+                  onChange={(e) => setFilters({ ...filters, customer: e.target.value })}
+                  className="w-full px-3 py-1.5 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent outline-none"
+                >
+                  <option value="">All Customers</option>
+                  {uniqueCustomers.map(customer => (
+                    <option key={customer} value={customer}>{customer}</option>
                   ))}
-                </tbody>
-              </table>
+                </select>
+              </div>
+
+              {/* Workshop Filter */}
+              <div>
+                <label className="block text-xs font-medium text-gray-700 mb-1">Workshop</label>
+                <select
+                  value={filters.workshop}
+                  onChange={(e) => setFilters({ ...filters, workshop: e.target.value })}
+                  className="w-full px-3 py-1.5 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent outline-none"
+                >
+                  <option value="">All Workshops</option>
+                  {uniqueWorkshops.map(workshop => (
+                    <option key={workshop} value={workshop}>{workshop}</option>
+                  ))}
+                </select>
+              </div>
+
+              {/* Machine Filter */}
+              <div>
+                <label className="block text-xs font-medium text-gray-700 mb-1">Machine</label>
+                <select
+                  value={filters.machine}
+                  onChange={(e) => setFilters({ ...filters, machine: e.target.value })}
+                  className="w-full px-3 py-1.5 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent outline-none"
+                >
+                  <option value="">All Machines</option>
+                  {uniqueMachines.map(machine => (
+                    <option key={machine} value={machine.toString()}>Machine {machine}</option>
+                  ))}
+                </select>
+              </div>
+
+              {/* Fabric Filter */}
+              <div>
+                <label className="block text-xs font-medium text-gray-700 mb-1">Fabric</label>
+                <select
+                  value={filters.fabric}
+                  onChange={(e) => setFilters({ ...filters, fabric: e.target.value })}
+                  className="w-full px-3 py-1.5 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent outline-none"
+                >
+                  <option value="">All Fabrics</option>
+                  <option value="vesti">Vesti</option>
+                  <option value="saree">Saree</option>
+                </select>
+              </div>
+
+              {/* Start Date Filter */}
+              <div>
+                <label className="block text-xs font-medium text-gray-700 mb-1">Start Date</label>
+                <input
+                  type="date"
+                  value={filters.startDate}
+                  onChange={(e) => setFilters({ ...filters, startDate: e.target.value })}
+                  className="w-full px-3 py-1.5 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent outline-none"
+                />
+              </div>
+
+              {/* End Date Filter */}
+              <div>
+                <label className="block text-xs font-medium text-gray-700 mb-1">End Date</label>
+                <input
+                  type="date"
+                  value={filters.endDate}
+                  onChange={(e) => setFilters({ ...filters, endDate: e.target.value })}
+                  className="w-full px-3 py-1.5 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent outline-none"
+                />
+              </div>
             </div>
-          )}
-        </div>
+
+            {/* Clear Filters Button */}
+            <button
+              onClick={clearFilters}
+              className="px-3 py-1.5 text-sm bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 transition font-medium"
+            >
+              Clear Filters
+            </button>
+          </div>
+
+          {/* Table */}
+          <div className="bg-white rounded-2xl shadow-soft overflow-hidden">
+            {sortedBeams.length === 0 ? (
+              <div className="p-12 text-center">
+                <Archive className="w-16 h-16 text-gray-300 mx-auto mb-4" />
+                <h3 className="text-xl font-semibold text-gray-700 mb-2">No Archived Beams</h3>
+                <p className="text-gray-500">
+                  {archivedBeams.length === 0 ? 'Completed beams will appear here' : 'No beams match the selected filters'}
+                </p>
+              </div>
+            ) : (
+              <div className="overflow-x-auto">
+                <table className="w-full">
+                  <thead className="bg-gray-50 border-b-2 border-gray-200">
+                    <tr>
+                      <th
+                        onClick={() => handleSort('beam_number')}
+                        className="text-left py-4 px-6 font-semibold text-gray-700 cursor-pointer hover:bg-gray-100 transition"
+                      >
+                        <div className="flex items-center space-x-2">
+                          <span>Beam Number</span>
+                          {sortConfig.key === 'beam_number' && (
+                            sortConfig.direction === 'asc' ? <ArrowUp className="w-4 h-4" /> : <ArrowDown className="w-4 h-4" />
+                          )}
+                        </div>
+                      </th>
+                      <th
+                        onClick={() => handleSort('workshop_name')}
+                        className="text-left py-4 px-6 font-semibold text-gray-700 cursor-pointer hover:bg-gray-100 transition"
+                      >
+                        <div className="flex items-center space-x-2">
+                          <span>Workshop</span>
+                          {sortConfig.key === 'workshop_name' && (
+                            sortConfig.direction === 'asc' ? <ArrowUp className="w-4 h-4" /> : <ArrowDown className="w-4 h-4" />
+                          )}
+                        </div>
+                      </th>
+                      <th
+                        onClick={() => handleSort('customer_name')}
+                        className="text-left py-4 px-6 font-semibold text-gray-700 cursor-pointer hover:bg-gray-100 transition"
+                      >
+                        <div className="flex items-center space-x-2">
+                          <span>Customer</span>
+                          {sortConfig.key === 'customer_name' && (
+                            sortConfig.direction === 'asc' ? <ArrowUp className="w-4 h-4" /> : <ArrowDown className="w-4 h-4" />
+                          )}
+                        </div>
+                      </th>
+                      <th
+                        onClick={() => handleSort('machine_number')}
+                        className="text-left py-4 px-6 font-semibold text-gray-700 cursor-pointer hover:bg-gray-100 transition"
+                      >
+                        <div className="flex items-center space-x-2">
+                          <span>Machine</span>
+                          {sortConfig.key === 'machine_number' && (
+                            sortConfig.direction === 'asc' ? <ArrowUp className="w-4 h-4" /> : <ArrowDown className="w-4 h-4" />
+                          )}
+                        </div>
+                      </th>
+                      <th
+                        onClick={() => handleSort('total_beam_meters')}
+                        className="text-left py-4 px-6 font-semibold text-gray-700 cursor-pointer hover:bg-gray-100 transition"
+                      >
+                        <div className="flex items-center space-x-2">
+                          <span>Total Meters</span>
+                          {sortConfig.key === 'total_beam_meters' && (
+                            sortConfig.direction === 'asc' ? <ArrowUp className="w-4 h-4" /> : <ArrowDown className="w-4 h-4" />
+                          )}
+                        </div>
+                      </th>
+                      <th
+                        onClick={() => handleSort('start_date')}
+                        className="text-left py-4 px-6 font-semibold text-gray-700 cursor-pointer hover:bg-gray-100 transition"
+                      >
+                        <div className="flex items-center space-x-2">
+                          <span>Start Date</span>
+                          {sortConfig.key === 'start_date' && (
+                            sortConfig.direction === 'asc' ? <ArrowUp className="w-4 h-4" /> : <ArrowDown className="w-4 h-4" />
+                          )}
+                        </div>
+                      </th>
+                      <th
+                        onClick={() => handleSort('end_date')}
+                        className="text-left py-4 px-6 font-semibold text-gray-700 cursor-pointer hover:bg-gray-100 transition"
+                      >
+                        <div className="flex items-center space-x-2">
+                          <span>End Date</span>
+                          {sortConfig.key === 'end_date' && (
+                            sortConfig.direction === 'asc' ? <ArrowUp className="w-4 h-4" /> : <ArrowDown className="w-4 h-4" />
+                          )}
+                        </div>
+                      </th>
+                      <th
+                        onClick={() => handleSort('fabric_type')}
+                        className="text-left py-4 px-6 font-semibold text-gray-700 cursor-pointer hover:bg-gray-100 transition"
+                      >
+                        <div className="flex items-center space-x-2">
+                          <span>Fabric</span>
+                          {sortConfig.key === 'fabric_type' && (
+                            sortConfig.direction === 'asc' ? <ArrowUp className="w-4 h-4" /> : <ArrowDown className="w-4 h-4" />
+                          )}
+                        </div>
+                      </th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {sortedBeams.map((beam) => (
+                      <tr
+                        key={beam.id}
+                        onClick={() => navigate(`/beams/${beam.id}`)}
+                        className="border-b border-gray-100 hover:bg-gray-50 cursor-pointer transition"
+                      >
+                        <td className="py-4 px-6">
+                          <span className="font-semibold text-gray-900">{beam.beam_number}</span>
+                        </td>
+                        <td className="py-4 px-6">
+                          <span className="text-gray-700">{beam.workshop_name}</span>
+                        </td>
+                        <td className="py-4 px-6">
+                          <span className="text-gray-700">{beam.customer_name}</span>
+                        </td>
+                        <td className="py-4 px-6">
+                          <span className="px-3 py-1 bg-blue-100 text-blue-700 text-sm rounded-full font-semibold">
+                            Machine {beam.machine_number}
+                          </span>
+                        </td>
+                        <td className="py-4 px-6">
+                          <span className="text-gray-700 font-medium">{beam.total_beam_meters}m</span>
+                        </td>
+                        <td className="py-4 px-6">
+                          <span className="text-gray-700">{beam.start_date}</span>
+                        </td>
+                        <td className="py-4 px-6">
+                          <span className="text-gray-700">{beam.end_date || '-'}</span>
+                        </td>
+                        <td className="py-4 px-6">
+                          <span className={`px-3 py-1 text-sm rounded-full font-semibold ${beam.fabric_type === 'vesti'
+                            ? 'bg-green-100 text-green-700'
+                            : 'bg-purple-100 text-purple-700'
+                            }`}>
+                            {beam.fabric_type?.toUpperCase()}
+                          </span>
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            )}
+          </div>
+        </>
       ) : (
         /* Machines Grid - existing code */
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6" key={selectedWorkshop}>
