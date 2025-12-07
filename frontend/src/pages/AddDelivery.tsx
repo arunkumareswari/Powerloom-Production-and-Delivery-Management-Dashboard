@@ -110,7 +110,7 @@ const AddDelivery = () => {
   }
 
   return (
-    <div className="max-w-3xl mx-auto space-y-6">
+    <div className="max-w-7xl mx-auto space-y-6">
       {/* Header */}
       <div className="flex items-center space-x-4">
         <button
@@ -133,31 +133,35 @@ const AddDelivery = () => {
       )}
 
       {/* Form */}
-      <form onSubmit={handleSubmit} className="bg-white rounded-2xl p-6 shadow-soft space-y-6">
-        <div>
-          <label className="block text-sm font-medium text-gray-700 mb-2">
-            Select Beam <span className="text-red-500">*</span>
-          </label>
-          <select
-            value={formData.beam_id}
-            onChange={(e) => handleBeamChange(e.target.value)}
-            className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-primary-500 focus:border-transparent outline-none"
-            required
-          >
-            <option value="">Choose a beam</option>
-            {activeBeams.map((beam) => (
-              <option key={beam.id} value={beam.id}>
-                {beam.beam_number} - {beam.customer_name} - Machine {beam.machine_number}
-                ({beam.remaining_meters.toFixed(0)}m remaining)
-              </option>
-            ))}
-          </select>
+      <form onSubmit={handleSubmit} className="bg-white rounded-2xl p-8 shadow-soft">
+        {/* Grid Layout - 3 columns on desktop, 1 on mobile */}
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 mb-6">
+          {/* Select Beam */}
+          <div className="lg:col-span-3">
+            <label className="block text-sm font-medium text-gray-700 mb-2">
+              Select Beam <span className="text-red-500">*</span>
+            </label>
+            <select
+              value={formData.beam_id}
+              onChange={(e) => handleBeamChange(e.target.value)}
+              className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-primary-500 focus:border-transparent outline-none"
+              required
+            >
+              <option value="">Choose a beam</option>
+              {activeBeams.map((beam) => (
+                <option key={beam.id} value={beam.id}>
+                  {beam.beam_number} - {beam.customer_name} - Machine {beam.machine_number}
+                  ({beam.remaining_meters.toFixed(0)}m remaining)
+                </option>
+              ))}
+            </select>
+          </div>
         </div>
 
         {selectedBeam && (
-          <div className="bg-blue-50 border border-blue-200 rounded-xl p-4">
+          <div className="bg-blue-50 border border-blue-200 rounded-xl p-4 mb-6">
             <p className="text-sm text-blue-900 mb-2"><strong>Beam Info:</strong></p>
-            <div className="grid grid-cols-2 gap-4 text-sm">
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-4 text-sm">
               <div>
                 <span className="text-blue-700">Meters per piece:</span>{' '}
                 <strong>{selectedBeam.meters_per_piece}m</strong>
@@ -178,72 +182,85 @@ const AddDelivery = () => {
           </div>
         )}
 
-        <div>
-          <label className="block text-sm font-medium text-gray-700 mb-2">
-            Delivery Date <span className="text-red-500">*</span>
-          </label>
-          <input
-            type="date"
-            value={formData.delivery_date}
-            onChange={(e) => setFormData({ ...formData, delivery_date: e.target.value })}
-            className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-primary-500 focus:border-transparent outline-none"
-            required
-          />
-        </div>
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 mb-6">
+          {/* Delivery Date */}
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-2">
+              Delivery Date <span className="text-red-500">*</span>
+            </label>
+            <input
+              type="date"
+              value={formData.delivery_date}
+              onChange={(e) => setFormData({ ...formData, delivery_date: e.target.value })}
+              className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-primary-500 focus:border-transparent outline-none"
+              required
+            />
+          </div>
 
+          {/* Design Preset */}
+          <div className="lg:col-span-2">
+            <label className="block text-sm font-medium text-gray-700 mb-2">
+              Design Preset <span className="text-red-500">*</span>
+            </label>
+            <select
+              value={formData.price_per_piece ? `${formData.design_name}|${formData.price_per_piece}` : ''}
+              onChange={(e) => {
+                if (e.target.value === 'custom') {
+                  setUseCustomPrice(true);
+                  setFormData({ ...formData, design_name: '', price_per_piece: '' });
+                } else if (e.target.value) {
+                  const [label, price] = e.target.value.split('|');
+                  setUseCustomPrice(false);
+                  setFormData({ ...formData, design_name: label, price_per_piece: price });
+                }
+              }}
+              className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-primary-500 focus:border-transparent outline-none"
+              required={!useCustomPrice}
+            >
+              <option value="">Select a design preset</option>
+              {pricePresets.map((preset) => (
+                <option key={preset.id} value={`${preset.label}|${preset.price}`}>
+                  {preset.label}
+                </option>
+              ))}
+              <option value="custom">Custom Design & Price</option>
+            </select>
+          </div>
 
-        <div>
-          <label className="block text-sm font-medium text-gray-700 mb-2">
-            Design Preset <span className="text-red-500">*</span>
-          </label>
-          <select
-            value={formData.price_per_piece ? `${formData.design_name}|${formData.price_per_piece}` : ''}
-            onChange={(e) => {
-              if (e.target.value === 'custom') {
-                setUseCustomPrice(true);
-                setFormData({ ...formData, design_name: '', price_per_piece: '' });
-              } else if (e.target.value) {
-                const [label, price] = e.target.value.split('|');
-                setUseCustomPrice(false);
-                setFormData({ ...formData, design_name: label, price_per_piece: price });
-              }
-            }}
-            className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-primary-500 focus:border-transparent outline-none"
-            required={!useCustomPrice}
-          >
-            <option value="">Select a design preset</option>
-            {pricePresets.map((preset) => (
-              <option key={preset.id} value={`${preset.label}|${preset.price}`}>
-                {preset.label}
-              </option>
-            ))}
-            <option value="custom">Custom Design & Price</option>
-          </select>
-
+          {/* Custom Design Inputs */}
           {useCustomPrice && (
-            <div className="mt-4 space-y-4">
-              <input
-                type="text"
-                value={formData.design_name}
-                onChange={(e) => setFormData({ ...formData, design_name: e.target.value })}
-                className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-primary-500 focus:border-transparent outline-none"
-                placeholder="Enter custom design name"
-                required
-              />
-              <input
-                type="text"
-                inputMode="decimal"
-                value={formData.price_per_piece}
-                onChange={(e) => setFormData({ ...formData, price_per_piece: e.target.value })}
-                className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-primary-500 focus:border-transparent outline-none"
-                placeholder="Enter custom price (₹)"
-                required
-              />
-            </div>
+            <>
+              <div className="lg:col-span-2">
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  Custom Design Name <span className="text-red-500">*</span>
+                </label>
+                <input
+                  type="text"
+                  value={formData.design_name}
+                  onChange={(e) => setFormData({ ...formData, design_name: e.target.value })}
+                  className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-primary-500 focus:border-transparent outline-none"
+                  placeholder="Enter custom design name"
+                  required
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  Custom Price (₹) <span className="text-red-500">*</span>
+                </label>
+                <input
+                  type="text"
+                  inputMode="decimal"
+                  value={formData.price_per_piece}
+                  onChange={(e) => setFormData({ ...formData, price_per_piece: e.target.value })}
+                  className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-primary-500 focus:border-transparent outline-none"
+                  placeholder="Enter custom price"
+                  required
+                />
+              </div>
+            </>
           )}
-        </div>
 
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+          {/* Good Pieces */}
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-2">
               Good Pieces <span className="text-red-500">*</span>
@@ -262,6 +279,7 @@ const AddDelivery = () => {
             />
           </div>
 
+          {/* Damaged Pieces */}
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-2">
               Damaged Pieces
@@ -280,7 +298,8 @@ const AddDelivery = () => {
           </div>
         </div>
 
-        <div>
+        {/* Notes */}
+        <div className="mb-6">
           <label className="block text-sm font-medium text-gray-700 mb-2">
             Notes (Optional)
           </label>
