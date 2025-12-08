@@ -42,7 +42,7 @@ function App() {
             <Route index element={<Dashboard />} />
             <Route path="workshops" element={<Workshops isAdmin={isAdmin} />} />
             <Route path="beams/:beamId" element={<BeamDetails isAdmin={isAdmin} />} />
-            <Route path="reports" element={<Reports />} />
+            <Route path="reports" element={<Reports isAdmin={isAdmin} />} />
 
             {/* Admin Only Routes */}
             <Route

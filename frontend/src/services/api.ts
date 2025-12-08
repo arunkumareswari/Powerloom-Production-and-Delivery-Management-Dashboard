@@ -64,6 +64,8 @@ export const designAPI = {
 export const reportAPI = {
   getBeamReport: (startDate: string, endDate: string) =>
     api.get('/reports/beam-details', { params: { start_date: startDate, end_date: endDate } }),
+  getDeliveryReport: (startDate: string, endDate: string, workshopId?: number) =>
+    api.get('/reports/delivery-details', { params: { start_date: startDate, end_date: endDate, workshop_id: workshopId } }),
 };
 
 export default api;

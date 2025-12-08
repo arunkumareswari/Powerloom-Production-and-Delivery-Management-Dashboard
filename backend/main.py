@@ -1261,6 +1261,50 @@ async def get_beam_report(start_date: str, end_date: str):
     
     return {"beams": beams}
 
+
+@app.get("/api/reports/delivery-details")
+async def get_delivery_report(start_date: str, end_date: str, workshop_id: int = None):
+    conn = get_db_connection()
+    cursor = conn.cursor(dictionary=True)
+    
+    workshop_filter = "AND w.id = %s" if workshop_id else ""
+    params = [start_date, end_date]
+    if workshop_id:
+        params.append(workshop_id)
+    
+    cursor.execute(f"""
+        SELECT d.id, d.delivery_date, d.design_name,
+               d.good_pieces, d.damaged_pieces, d.meters_used,
+               d.price_per_piece, d.total_amount,
+               b.beam_number, b.fabric_type,
+               m.machine_number,
+               w.name as workshop, c.name as customer
+        FROM deliveries d
+        JOIN beam_starts b ON d.beam_id = b.id
+        LEFT JOIN machines m ON b.machine_id = m.id
+        JOIN workshops w ON b.workshop_id = w.id
+        JOIN customers c ON b.customer_id = c.id
+        WHERE d.delivery_date BETWEEN %s AND %s
+        {workshop_filter}
+        ORDER BY d.delivery_date DESC
+    """, tuple(params))
+    
+    deliveries = cursor.fetchall()
+    
+    # Convert decimal types
+    for delivery in deliveries:
+        for key, value in delivery.items():
+            if isinstance(value, Decimal):
+                delivery[key] = float(value)
+            elif hasattr(value, 'isoformat'):
+                delivery[key] = value.isoformat()
+    
+    cursor.close()
+    conn.close()
+    
+    return {"deliveries": deliveries}
+
+
 if __name__ == "__main__":
     import uvicorn
     uvicorn.run(app, host="0.0.0.0", port=8000)

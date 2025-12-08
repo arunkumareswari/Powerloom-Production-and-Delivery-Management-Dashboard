@@ -59,7 +59,9 @@ const ProductionTrendChart = ({ filterType, fabricType, startDate, endDate }: Fi
             console.log('Production Trend Response:', response.data);
 
             setData(response.data.data);
-            setWorkshopKeys(response.data.workshops || []);
+            // Sort workshop keys alphabetically to maintain consistent order
+            const sortedWorkshops = (response.data.workshops || []).sort();
+            setWorkshopKeys(sortedWorkshops);
         } catch (error) {
             console.error('Failed to fetch production trend:', error);
         } finally {
@@ -87,9 +89,9 @@ const ProductionTrendChart = ({ filterType, fabricType, startDate, endDate }: Fi
                     <p className="text-xs md:text-sm text-gray-600 dark:text-gray-400 mt-1">Workshop-wise production</p>
                 </div>
                 <div className="hidden sm:flex flex-col gap-1 text-sm">
-                    {[...workshopKeys].sort().map((workshop, index) => (
+                    {workshopKeys.map((workshop, index) => (
                         <div key={workshop} className="flex items-center gap-2">
-                            <span className="w-3 h-3 rounded-full" style={{ backgroundColor: WORKSHOP_COLORS[workshopKeys.indexOf(workshop) % WORKSHOP_COLORS.length] }}></span>
+                            <span className="w-3 h-3 rounded-full" style={{ backgroundColor: WORKSHOP_COLORS[index % WORKSHOP_COLORS.length] }}></span>
                             <span className="text-gray-600 dark:text-gray-300">{workshop}</span>
                         </div>
                     ))}
