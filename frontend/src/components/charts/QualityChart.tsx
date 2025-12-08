@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from 'recharts';
+import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
 import api from '../../services/api';
 
 interface MachineQualityData {
@@ -80,7 +80,7 @@ const QualityChart = ({ filterType, fabricType, startDate, endDate }: FilterProp
             </div>
 
             <ResponsiveContainer width="100%" height={350}>
-                <BarChart data={data} margin={{ top: 20, right: 30, left: 20, bottom: 5 }}>
+                <BarChart data={data} margin={{ top: 10, right: 10, left: -10, bottom: 5 }}>
                     <CartesianGrid strokeDasharray="3 3" stroke="#e5e7eb" vertical={false} />
                     <XAxis
                         dataKey="machine_name"
@@ -107,6 +107,25 @@ const QualityChart = ({ filterType, fabricType, startDate, endDate }: FilterProp
                             padding: '12px 16px'
                         }}
                         cursor={{ fill: 'rgba(59, 130, 246, 0.1)' }}
+                        content={({ payload }) => {
+                            if (!payload || payload.length === 0) return null;
+                            const goodPieces = Number(payload.find((p: any) => p.dataKey === 'good_pieces')?.value || 0);
+                            const damagedPieces = Number(payload.find((p: any) => p.dataKey === 'damaged_pieces')?.value || 0);
+                            const total = goodPieces + damagedPieces;
+                            return (
+                                <div style={{ backgroundColor: 'white', padding: '12px 16px', borderRadius: '12px', boxShadow: '0 10px 15px -3px rgba(0, 0, 0, 0.1)' }}>
+                                    <p style={{ fontWeight: 'bold', color: '#374151', fontSize: '14px', marginBottom: '8px' }}>
+                                        Total Count: {total}
+                                    </p>
+                                    <p style={{ color: '#10b981', fontSize: '13px', margin: '4px 0' }}>
+                                        Good Pieces: {goodPieces}
+                                    </p>
+                                    <p style={{ color: '#ef4444', fontSize: '13px', margin: '4px 0' }}>
+                                        Damaged Pieces: {damagedPieces}
+                                    </p>
+                                </div>
+                            );
+                        }}
                     />
 
                     {/* Stacked bars - damaged at bottom, good on top */}
@@ -127,23 +146,23 @@ const QualityChart = ({ filterType, fabricType, startDate, endDate }: FilterProp
                 </BarChart>
             </ResponsiveContainer>
 
-            <div className="mt-6 pt-6 border-t border-gray-200">
+            <div className="mt-4 pt-4 border-t border-gray-200">
                 <div className="grid grid-cols-4 gap-4">
                     <div className="text-center">
                         <p className="text-xs text-gray-500 uppercase tracking-wide font-medium">Total Machines</p>
-                        <p className="text-2xl font-bold text-gray-900 mt-2">{data.length}</p>
+                        <p className="text-xl font-bold text-gray-900 mt-1">{data.length}</p>
                     </div>
                     <div className="text-center">
                         <p className="text-xs text-gray-500 uppercase tracking-wide font-medium">Good Pieces</p>
-                        <p className="text-2xl font-bold text-green-600 mt-2">{totalGood.toLocaleString()}</p>
+                        <p className="text-xl font-bold text-green-600 mt-1">{totalGood.toLocaleString()}</p>
                     </div>
                     <div className="text-center">
                         <p className="text-xs text-gray-500 uppercase tracking-wide font-medium">Damaged</p>
-                        <p className="text-2xl font-bold text-red-600 mt-2">{totalDamaged.toLocaleString()}</p>
+                        <p className="text-xl font-bold text-red-600 mt-1">{totalDamaged.toLocaleString()}</p>
                     </div>
                     <div className="text-center">
                         <p className="text-xs text-gray-500 uppercase tracking-wide font-medium">Quality Rate</p>
-                        <p className="text-2xl font-bold text-primary-600 mt-2">{qualityRate}%</p>
+                        <p className="text-xl font-bold text-primary-600 mt-1">{qualityRate}%</p>
                     </div>
                 </div>
             </div>
