@@ -155,7 +155,7 @@ const ManageMachines = () => {
 
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-2">
-                Fabric Type <span className="text-red-500">*</span>
+                Product Type <span className="text-red-500">*</span>
               </label>
               <select
                 value={formData.fabric_type}
@@ -190,7 +190,7 @@ const ManageMachines = () => {
               <tr className="border-b-2 border-gray-200">
                 <th className="text-left py-3 px-4 font-semibold text-gray-700">Workshop</th>
                 <th className="text-left py-3 px-4 font-semibold text-gray-700">Machine #</th>
-                <th className="text-left py-3 px-4 font-semibold text-gray-700">Fabric Type</th>
+                <th className="text-left py-3 px-4 font-semibold text-gray-700">Product Type</th>
                 <th className="text-left py-3 px-4 font-semibold text-gray-700">Status</th>
                 <th className="text-center py-3 px-4 font-semibold text-gray-700">Actions</th>
               </tr>
@@ -234,7 +234,7 @@ const ManageMachines = () => {
         <h4 className="font-semibold text-blue-900 mb-2">ℹ️ Important Notes:</h4>
         <ul className="text-sm text-blue-800 space-y-1 list-disc list-inside">
           <li>Machine numbers should be unique within each workshop</li>
-          <li>Fabric type (Veshti/Saree) is fixed per machine</li>
+          <li>Product Type (Veshti/Saree) is fixed per machine</li>
           <li>Deleting a machine will fail if it has active beams</li>
         </ul>
       </div>

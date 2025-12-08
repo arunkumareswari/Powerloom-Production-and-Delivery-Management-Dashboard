@@ -111,7 +111,7 @@ const Dashboard = () => {
             onChange={(e) => setFabricType(e.target.value)}
             className="px-4 py-2 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-primary-500"
           >
-            <option value="all">All Fabrics</option>
+            <option value="all"> All Product</option>
             <option value="vesti">Veshti</option>
             <option value="saree">Saree</option>
           </select>

@@ -332,7 +332,7 @@ const AdminPanel = () => {
                             </form>
                             <div className="overflow-x-auto">
                                 <table className="w-full">
-                                    <thead><tr className="border-b-2 border-gray-200"><th className="text-left py-3 px-4 font-semibold">Workshop</th><th className="text-left py-3 px-4 font-semibold">Machine #</th><th className="text-left py-3 px-4 font-semibold">Fabric Type</th><th className="text-center py-3 px-4 font-semibold">Actions</th></tr></thead>
+                                    <thead><tr className="border-b-2 border-gray-200"><th className="text-left py-3 px-4 font-semibold">Workshop</th><th className="text-left py-3 px-4 font-semibold">Machine #</th><th className="text-left py-3 px-4 font-semibold">Product Type</th><th className="text-center py-3 px-4 font-semibold">Actions</th></tr></thead>
                                     <tbody>
                                         {machines.map((machine) => (
                                             <tr key={machine.id} className="border-b border-gray-100 hover:bg-gray-50">

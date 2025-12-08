@@ -288,13 +288,13 @@ const Workshops = ({ isAdmin }: { isAdmin: boolean }) => {
 
               {/* Fabric Filter */}
               <div>
-                <label className="block text-xs font-medium text-gray-700 mb-1">Fabric</label>
+                <label className="block text-xs font-medium text-gray-700 mb-1">Product</label>
                 <select
                   value={filters.fabric}
                   onChange={(e) => setFilters({ ...filters, fabric: e.target.value })}
                   className="w-full px-3 py-1.5 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent outline-none"
                 >
-                  <option value="">All Fabrics</option>
+                  <option value=""> All Product</option>
                   <option value="vesti">Veshti</option>
                   <option value="saree">Saree</option>
                 </select>

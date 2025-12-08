@@ -431,7 +431,7 @@ async def get_production_trend(days: int = 30, fabric_type: str = None):
 
 @app.get("/api/analytics/fabric-distribution")
 async def get_fabric_distribution():
-    """Get fabric type distribution"""
+    """Get Product Type distribution"""
     conn = get_db_connection()
     cursor = conn.cursor(dictionary=True)
     
@@ -1237,13 +1237,15 @@ async def get_beam_report(start_date: str, end_date: str):
     cursor = conn.cursor(dictionary=True)
     
     cursor.execute("""
-        SELECT b.beam_number, b.start_date, b.end_date,
+        SELECT b.beam_number, b.start_date, b.end_date, b.status,
+               m.machine_number,
                w.name as workshop, c.name as customer,
                b.fabric_type, b.total_beam_meters,
                COALESCE(SUM(d.good_pieces), 0) as total_pieces,
                COALESCE(SUM(d.damaged_pieces), 0) as total_damaged,
                COALESCE(SUM(d.total_amount), 0) as total_amount
         FROM beam_starts b
+        LEFT JOIN machines m ON b.machine_id = m.id
         JOIN workshops w ON b.workshop_id = w.id
         JOIN customers c ON b.customer_id = c.id
         LEFT JOIN deliveries d ON b.id = d.beam_id

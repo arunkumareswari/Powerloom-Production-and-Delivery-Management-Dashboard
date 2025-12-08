@@ -27,8 +27,8 @@ const Reports = () => {
     if (reportData.length === 0) return;
 
     const headers = [
-      'Beam Number', 'Workshop', 'Customer', 'Fabric Type', 
-      'Start Date', 'End Date', 'Total Meters', 'Total Pieces', 
+      'Beam Number', 'Workshop', 'Customer', 'Product Type',
+      'Start Date', 'End Date', 'Total Meters', 'Total Pieces',
       'Damaged Pieces', 'Total Amount'
     ];
 
@@ -200,11 +200,12 @@ const Reports = () => {
             <table className="w-full">
               <thead>
                 <tr className="border-b-2 border-gray-200">
+                  <th className="text-left py-3 px-4 font-semibold text-gray-700">Machine No</th>
                   <th className="text-left py-3 px-4 font-semibold text-gray-700">Beam Number</th>
                   <th className="text-left py-3 px-4 font-semibold text-gray-700">Workshop</th>
                   <th className="text-left py-3 px-4 font-semibold text-gray-700">Customer</th>
-                  <th className="text-left py-3 px-4 font-semibold text-gray-700">Fabric</th>
-                  <th className="text-left py-3 px-4 font-semibold text-gray-700">Start Date</th>
+                  <th className="text-left py-3 px-4 font-semibold text-gray-700">Product Type</th>
+                  <th className="text-left py-3 px-4 font-semibold text-gray-700">Status</th>
                   <th className="text-right py-3 px-4 font-semibold text-gray-700">Total Meters</th>
                   <th className="text-right py-3 px-4 font-semibold text-gray-700">Good Pieces</th>
                   <th className="text-right py-3 px-4 font-semibold text-gray-700">Damaged</th>
@@ -214,6 +215,7 @@ const Reports = () => {
               <tbody>
                 {reportData.map((beam, idx) => (
                   <tr key={idx} className="border-b border-gray-100 hover:bg-gray-50">
+                    <td className="py-3 px-4 font-semibold">{beam.machine_number || 'N/A'}</td>
                     <td className="py-3 px-4 font-mono font-semibold">{beam.beam_number}</td>
                     <td className="py-3 px-4">{beam.workshop}</td>
                     <td className="py-3 px-4">{beam.customer}</td>
@@ -222,8 +224,13 @@ const Reports = () => {
                         {beam.fabric_type.toUpperCase()}
                       </span>
                     </td>
-                    <td className="py-3 px-4 text-sm text-gray-600">
-                      {format(new Date(beam.start_date), 'dd MMM yyyy')}
+                    <td className="py-3 px-4">
+                      <span className={`px-2 py-1 text-xs rounded-full font-semibold ${beam.status === 'completed' || beam.end_date
+                        ? 'bg-green-100 text-green-700'
+                        : 'bg-yellow-100 text-yellow-700'
+                        }`}>
+                        {beam.status === 'completed' || beam.end_date ? 'Completed' : 'Running'}
+                      </span>
                     </td>
                     <td className="py-3 px-4 text-right">{beam.total_beam_meters}m</td>
                     <td className="py-3 px-4 text-right font-semibold text-green-600">{beam.total_pieces}</td>
@@ -236,7 +243,7 @@ const Reports = () => {
               </tbody>
               <tfoot>
                 <tr className="border-t-2 border-gray-300 bg-gray-50">
-                  <td colSpan={6} className="py-3 px-4 font-bold text-gray-900">TOTAL</td>
+                  <td colSpan={7} className="py-3 px-4 font-bold text-gray-900">TOTAL</td>
                   <td className="py-3 px-4 text-right font-bold text-green-600">{totals.totalPieces}</td>
                   <td className="py-3 px-4 text-right font-bold text-red-600">{totals.totalDamaged}</td>
                   <td className="py-3 px-4 text-right font-bold text-primary-600">

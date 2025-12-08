@@ -214,7 +214,7 @@ const BeamDetails = ({ isAdmin }: { isAdmin: boolean }) => {
               <p className="text-lg font-bold text-green-700">{totals.estimated_pieces_remaining} pcs</p>
             </div>
             <div className="bg-purple-50 rounded-xl p-3">
-              <p className="text-xs text-gray-600">Fabric Type</p>
+              <p className="text-xs text-gray-600">Product Type</p>
               <p className="text-lg font-bold text-purple-700">{beam.fabric_type.toUpperCase()}</p>
             </div>
           </div>
@@ -331,7 +331,7 @@ const BeamDetails = ({ isAdmin }: { isAdmin: boolean }) => {
             <p className="font-semibold text-gray-900">Machine {beam.machine_number}</p>
           </div>
           <div>
-            <p className="text-sm text-gray-600">Fabric Type</p>
+            <p className="text-sm text-gray-600">Product Type</p>
             <p className="font-semibold text-gray-900">{beam.fabric_type.toUpperCase()}</p>
           </div>
         </div>
