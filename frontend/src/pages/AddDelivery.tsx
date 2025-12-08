@@ -150,7 +150,7 @@ const AddDelivery = () => {
               <option value="">Choose a beam</option>
               {activeBeams.map((beam) => (
                 <option key={beam.id} value={beam.id}>
-                  {beam.beam_number} • {beam.customer_name} • M{beam.machine_number} ({beam.remaining_meters.toFixed(0)}m)
+                  {beam.beam_number} • {beam.workshop_name} • M{beam.machine_number} ({beam.remaining_meters.toFixed(0)}m)
                 </option>
               ))}
             </select>
