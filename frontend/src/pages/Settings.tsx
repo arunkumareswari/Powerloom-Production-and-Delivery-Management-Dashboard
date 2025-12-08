@@ -46,8 +46,8 @@ const Settings = () => {
     <div className="max-w-4xl mx-auto space-y-6">
       {/* Header */}
       <div>
-        <h1 className="text-3xl font-bold text-gray-900">Settings</h1>
-        <p className="text-gray-600 mt-1">Manage your admin account settings</p>
+        <h1 className="text-xl md:text-3xl font-bold text-gray-900">Settings</h1>
+        <p className="text-xs text-gray-600 hidden sm:block">Manage your admin account settings</p>
       </div>
 
       {/* Password Reset Section */}
@@ -167,24 +167,24 @@ const Settings = () => {
       {/* Reset Confirmation Modal */}
       <div id="reset-modal" className="hidden fixed inset-0 z-50 flex items-center justify-center p-4">
         {/* Backdrop */}
-        <div className="fixed inset-0 bg-black/50 backdrop-blur-sm" onClick={() => {
+        <div className="fixed inset-0 bg-black/50" onClick={() => {
           document.getElementById('reset-modal')?.classList.add('hidden');
         }}></div>
 
         {/* Modal Content */}
-        <div className="relative bg-white rounded-2xl p-8 max-w-md w-full mx-4 shadow-2xl">
-          <div className="flex items-center space-x-3 mb-6">
-            <div className="w-12 h-12 bg-red-100 rounded-xl flex items-center justify-center">
-              <AlertCircle className="w-6 h-6 text-red-600" />
+        <div className="relative bg-white rounded-xl p-5 max-w-sm w-full mx-4 shadow-2xl">
+          <div className="flex items-center space-x-3 mb-4">
+            <div className="w-10 h-10 bg-red-100 rounded-lg flex items-center justify-center flex-shrink-0">
+              <AlertCircle className="w-5 h-5 text-red-600" />
             </div>
             <div>
-              <h3 className="text-xl font-bold text-gray-900">Confirm Database Reset</h3>
-              <p className="text-sm text-gray-600">Enter admin password to proceed</p>
+              <h3 className="text-lg font-bold text-gray-900">Confirm Database Reset</h3>
+              <p className="text-xs text-gray-600">Enter admin password to proceed</p>
             </div>
           </div>
 
-          <div className="bg-red-50 border border-red-200 rounded-xl p-4 mb-6">
-            <p className="text-sm text-red-800 font-semibold">This will delete ALL data permanently!</p>
+          <div className="bg-red-50 border border-red-200 rounded-lg p-3 mb-4">
+            <p className="text-xs text-red-800 font-semibold">This will delete ALL data permanently!</p>
           </div>
 
           <form onSubmit={async (e) => {
@@ -219,21 +219,21 @@ const Settings = () => {
             } finally {
               setLoading(false);
             }
-          }} className="space-y-4">
+          }} className="space-y-3">
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
+              <label className="block text-xs font-medium text-gray-700 mb-1">
                 Admin Password <span className="text-red-500">*</span>
               </label>
               <input
                 id="reset-password"
                 type="password"
-                className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-red-500 focus:border-transparent outline-none"
+                className="w-full px-3 py-2 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-red-500 focus:border-transparent outline-none"
                 placeholder="Enter admin password"
                 required
               />
             </div>
 
-            <div className="flex space-x-3">
+            <div className="flex space-x-2">
               <button
                 type="button"
                 onClick={() => {
@@ -241,14 +241,14 @@ const Settings = () => {
                   if (modal) modal.classList.add('hidden');
                   (document.getElementById('reset-password') as HTMLInputElement).value = '';
                 }}
-                className="flex-1 px-6 py-3 border border-gray-300 text-gray-700 rounded-xl hover:bg-gray-50 transition font-semibold"
+                className="flex-1 px-4 py-2 text-sm border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition font-semibold"
               >
                 Cancel
               </button>
               <button
                 type="submit"
                 disabled={loading}
-                className="flex-1 px-6 py-3 bg-red-600 text-white rounded-xl hover:bg-red-700 transition font-semibold disabled:opacity-50"
+                className="flex-1 px-4 py-2 text-sm bg-red-600 text-white rounded-lg hover:bg-red-700 transition font-semibold disabled:opacity-50"
               >
                 {loading ? 'Resetting...' : 'Reset Database'}
               </button>

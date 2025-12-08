@@ -79,14 +79,14 @@ const ProductionTrendChart = ({ filterType, fabricType, startDate, endDate }: Fi
     }
 
     return (
-        <div className="bg-white rounded-2xl p-4 shadow-lg hover:shadow-xl transition-shadow h-full">
+        <div className="bg-white rounded-xl md:rounded-2xl p-3 md:p-4 shadow-lg hover:shadow-xl transition-shadow h-full">
             {/* Header with Legend */}
-            <div className="mb-4 flex justify-between items-start">
+            <div className="mb-3 md:mb-4 flex justify-between items-start">
                 <div>
-                    <h3 className="text-xl font-bold text-gray-900">Production Trend</h3>
-                    <p className="text-sm text-gray-600 mt-1">Workshop-wise production over time</p>
+                    <h3 className="text-base md:text-xl font-bold text-gray-900">Production Trend</h3>
+                    <p className="text-xs md:text-sm text-gray-600 mt-1">Workshop-wise production</p>
                 </div>
-                <div className="flex flex-col gap-1 text-sm">
+                <div className="hidden sm:flex flex-col gap-1 text-sm">
                     {[...workshopKeys].sort().map((workshop, index) => (
                         <div key={workshop} className="flex items-center gap-2">
                             <span className="w-3 h-3 rounded-full" style={{ backgroundColor: WORKSHOP_COLORS[workshopKeys.indexOf(workshop) % WORKSHOP_COLORS.length] }}></span>
@@ -97,7 +97,7 @@ const ProductionTrendChart = ({ filterType, fabricType, startDate, endDate }: Fi
             </div>
 
             {/* Modern Area Chart */}
-            <ResponsiveContainer width="100%" height={320}>
+            <ResponsiveContainer width="100%" height={250}>
                 <AreaChart data={data} margin={{ top: 10, right: 10, left: -10, bottom: 0 }}>
                     <defs>
                         {workshopKeys.map((workshop, index) => (

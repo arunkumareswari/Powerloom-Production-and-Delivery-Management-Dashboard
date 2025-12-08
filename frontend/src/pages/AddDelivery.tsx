@@ -120,8 +120,8 @@ const AddDelivery = () => {
           <ArrowLeft className="w-5 h-5" />
         </button>
         <div>
-          <h1 className="text-3xl font-bold text-gray-900">Add Delivery</h1>
-          <p className="text-gray-600 mt-1">Record a new delivery for a beam</p>
+          <h1 className="text-xl md:text-3xl font-bold text-gray-900">Add Delivery</h1>
+          <p className="text-xs text-gray-600 hidden sm:block">Record a new delivery for a beam</p>
         </div>
       </div>
 
@@ -144,14 +144,13 @@ const AddDelivery = () => {
             <select
               value={formData.beam_id}
               onChange={(e) => handleBeamChange(e.target.value)}
-              className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-primary-500 focus:border-transparent outline-none"
+              className="w-full px-3 py-2 md:px-4 md:py-3 text-sm md:text-base border border-gray-300 rounded-lg md:rounded-xl focus:ring-2 focus:ring-primary-500 focus:border-transparent outline-none"
               required
             >
               <option value="">Choose a beam</option>
               {activeBeams.map((beam) => (
                 <option key={beam.id} value={beam.id}>
-                  {beam.beam_number} - {beam.customer_name} - Machine {beam.machine_number}
-                  ({beam.remaining_meters.toFixed(0)}m remaining)
+                  {beam.beam_number} • {beam.customer_name} • M{beam.machine_number} ({beam.remaining_meters.toFixed(0)}m)
                 </option>
               ))}
             </select>
@@ -192,7 +191,7 @@ const AddDelivery = () => {
               type="date"
               value={formData.delivery_date}
               onChange={(e) => setFormData({ ...formData, delivery_date: e.target.value })}
-              className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-primary-500 focus:border-transparent outline-none"
+              className="w-full px-3 py-2 md:px-4 md:py-3 text-sm md:text-base border border-gray-300 rounded-lg md:rounded-xl focus:ring-2 focus:ring-primary-500 focus:border-transparent outline-none"
               required
             />
           </div>
@@ -214,7 +213,7 @@ const AddDelivery = () => {
                   setFormData({ ...formData, design_name: label, price_per_piece: price });
                 }
               }}
-              className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-primary-500 focus:border-transparent outline-none"
+              className="w-full px-3 py-2 md:px-4 md:py-3 text-sm md:text-base border border-gray-300 rounded-lg md:rounded-xl focus:ring-2 focus:ring-primary-500 focus:border-transparent outline-none"
               required={!useCustomPrice}
             >
               <option value="">Select a design preset</option>
@@ -238,7 +237,7 @@ const AddDelivery = () => {
                   type="text"
                   value={formData.design_name}
                   onChange={(e) => setFormData({ ...formData, design_name: e.target.value })}
-                  className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-primary-500 focus:border-transparent outline-none"
+                  className="w-full px-3 py-2 md:px-4 md:py-3 text-sm md:text-base border border-gray-300 rounded-lg md:rounded-xl focus:ring-2 focus:ring-primary-500 focus:border-transparent outline-none"
                   placeholder="Enter custom design name"
                   required
                 />
@@ -252,7 +251,7 @@ const AddDelivery = () => {
                   inputMode="decimal"
                   value={formData.price_per_piece}
                   onChange={(e) => setFormData({ ...formData, price_per_piece: e.target.value })}
-                  className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-primary-500 focus:border-transparent outline-none"
+                  className="w-full px-3 py-2 md:px-4 md:py-3 text-sm md:text-base border border-gray-300 rounded-lg md:rounded-xl focus:ring-2 focus:ring-primary-500 focus:border-transparent outline-none"
                   placeholder="Enter custom price"
                   required
                 />
@@ -273,7 +272,7 @@ const AddDelivery = () => {
                 const value = e.target.value.replace(/[^0-9]/g, '');
                 setFormData({ ...formData, good_pieces: value });
               }}
-              className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-primary-500 focus:border-transparent outline-none"
+              className="w-full px-3 py-2 md:px-4 md:py-3 text-sm md:text-base border border-gray-300 rounded-lg md:rounded-xl focus:ring-2 focus:ring-primary-500 focus:border-transparent outline-none"
               placeholder="90"
               required
             />
@@ -292,7 +291,7 @@ const AddDelivery = () => {
                 const value = e.target.value.replace(/[^0-9]/g, '');
                 setFormData({ ...formData, damaged_pieces: value });
               }}
-              className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-primary-500 focus:border-transparent outline-none"
+              className="w-full px-3 py-2 md:px-4 md:py-3 text-sm md:text-base border border-gray-300 rounded-lg md:rounded-xl focus:ring-2 focus:ring-primary-500 focus:border-transparent outline-none"
               placeholder="10"
             />
           </div>

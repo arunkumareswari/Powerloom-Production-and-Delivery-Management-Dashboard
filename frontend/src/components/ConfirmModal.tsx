@@ -33,33 +33,33 @@ const ConfirmModal = ({
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 animate-fadeIn">
             {/* Backdrop */}
             <div
-                className="fixed inset-0 bg-black/50 backdrop-blur-sm"
+                className="fixed inset-0 bg-black/50"
                 onClick={onClose}
             />
 
             {/* Modal */}
-            <div className="relative bg-white rounded-2xl shadow-2xl max-w-md w-full animate-slideUp">
+            <div className="relative bg-white rounded-xl shadow-2xl max-w-sm w-full mx-4 animate-slideUp">
                 {/* Header */}
-                <div className="flex items-center justify-between px-6 py-4 border-b border-gray-200">
-                    <h3 className="text-xl font-bold text-gray-900">{title}</h3>
+                <div className="flex items-center justify-between px-4 py-3 border-b border-gray-200">
+                    <h3 className="text-lg font-bold text-gray-900">{title}</h3>
                     <button
                         onClick={onClose}
-                        className="p-1.5 text-gray-400 hover:text-gray-600 hover:bg-gray-100 rounded-lg transition flex-shrink-0"
+                        className="p-1 text-gray-400 hover:text-gray-600 hover:bg-gray-100 rounded-lg transition flex-shrink-0"
                     >
-                        <X className="w-5 h-5" />
+                        <X className="w-4 h-4" />
                     </button>
                 </div>
 
                 {/* Content */}
-                <div className="p-6">
-                    <p className="text-gray-600 leading-relaxed">{message}</p>
+                <div className="p-4">
+                    <p className="text-sm text-gray-600 leading-relaxed">{message}</p>
                 </div>
 
                 {/* Actions */}
-                <div className="flex items-center justify-end space-x-3 p-6 bg-gray-50 rounded-b-2xl">
+                <div className="flex items-center justify-end space-x-2 px-4 pb-4">
                     <button
                         onClick={onClose}
-                        className="px-6 py-2.5 text-gray-700 bg-white border border-gray-300 rounded-xl hover:bg-gray-50 transition font-medium"
+                        className="px-4 py-2 text-sm text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 transition font-medium"
                     >
                         {cancelText}
                     </button>
@@ -68,7 +68,7 @@ const ConfirmModal = ({
                             onConfirm();
                             onClose();
                         }}
-                        className={`px-6 py-2.5 text-white rounded-xl transition font-medium ${typeStyles[type]}`}
+                        className={`px-4 py-2 text-sm text-white rounded-lg transition font-medium ${typeStyles[type]}`}
                     >
                         {confirmText}
                     </button>

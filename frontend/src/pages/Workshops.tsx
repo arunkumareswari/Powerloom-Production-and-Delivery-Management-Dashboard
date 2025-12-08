@@ -173,22 +173,22 @@ const Workshops = ({ isAdmin }: { isAdmin: boolean }) => {
   }
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-4 md:space-y-6">
       {/* Header with Toggle */}
-      <div className="flex items-center justify-between mb-4">
+      <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-3xl font-bold text-gray-900">Workshops</h1>
-          <p className="text-gray-600 mt-1">View machines and their current status</p>
+          <h1 className="text-xl md:text-3xl font-bold text-gray-900">Workshops</h1>
+          <p className="text-xs text-gray-600 hidden sm:block">View machines and their status</p>
         </div>
 
         {/* Present/Archive Toggle */}
-        <div className="flex items-center bg-gray-100 rounded-xl p-1">
+        <div className="flex items-center bg-gray-100 rounded-lg p-1">
           <button
             onClick={() => {
               setShowArchive(false);
               setSearchParams({});
             }}
-            className={`px-6 py-2 rounded-lg font-semibold transition-all ${!showArchive
+            className={`px-4 py-1.5 text-sm rounded-lg font-semibold transition-all ${!showArchive
               ? 'bg-white text-primary-600 shadow-sm'
               : 'text-gray-600 hover:text-gray-900'
               }`}
@@ -200,12 +200,12 @@ const Workshops = ({ isAdmin }: { isAdmin: boolean }) => {
               setShowArchive(true);
               setSearchParams({ view: 'archive' });
             }}
-            className={`px-6 py-2 rounded-lg font-semibold transition-all ${showArchive
+            className={`px-4 py-1.5 text-sm rounded-lg font-semibold transition-all flex items-center ${showArchive
               ? 'bg-white text-primary-600 shadow-sm'
               : 'text-gray-600 hover:text-gray-900'
               }`}
           >
-            <Archive className="w-4 h-4 inline mr-2" />
+            <Archive className="w-3.5 h-3.5 mr-1.5" />
             Archive
           </button>
         </div>
@@ -213,26 +213,44 @@ const Workshops = ({ isAdmin }: { isAdmin: boolean }) => {
 
       {/* Workshop Tabs - Only show when in Present mode */}
       {!showArchive && (
-        <div className="flex space-x-4 border-b border-gray-200">
-          {workshops.map((workshop) => (
-            <button
-              key={workshop.id}
-              onClick={() => selectWorkshop(workshop.id)}
-              className={`px-6 py-3 font-semibold transition border-b-2 ${selectedWorkshop === workshop.id
-                ? 'border-primary-500 text-primary-600'
-                : 'border-transparent text-gray-600 hover:text-gray-900'
-                }`}
+        <>
+          {/* Mobile Dropdown */}
+          <div className="md:hidden mb-4">
+            <select
+              value={selectedWorkshop || ''}
+              onChange={(e) => selectWorkshop(Number(e.target.value))}
+              className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-primary-500 focus:border-transparent outline-none font-semibold"
             >
-              <div className="flex items-center space-x-2">
-                <Factory className="w-5 h-5" />
-                <span>{workshop.name}</span>
-                <span className="text-xs bg-gray-100 px-2 py-1 rounded-full">
-                  {workshop.actual_machine_count} machines
-                </span>
-              </div>
-            </button>
-          ))}
-        </div>
+              {workshops.map((workshop) => (
+                <option key={workshop.id} value={workshop.id}>
+                  {workshop.name} ({workshop.actual_machine_count} machines)
+                </option>
+              ))}
+            </select>
+          </div>
+
+          {/* Desktop Tabs */}
+          <div className="hidden md:flex space-x-4 border-b border-gray-200">
+            {workshops.map((workshop) => (
+              <button
+                key={workshop.id}
+                onClick={() => selectWorkshop(workshop.id)}
+                className={`px-6 py-3 font-semibold transition border-b-2 ${selectedWorkshop === workshop.id
+                  ? 'border-primary-500 text-primary-600'
+                  : 'border-transparent text-gray-600 hover:text-gray-900'
+                  }`}
+              >
+                <div className="flex items-center space-x-2">
+                  <Factory className="w-5 h-5" />
+                  <span>{workshop.name}</span>
+                  <span className="text-xs bg-gray-100 px-2 py-1 rounded-full">
+                    {workshop.actual_machine_count} machines
+                  </span>
+                </div>
+              </button>
+            ))}
+          </div>
+        </>
       )}
 
       {/* Archived Beams Table */}

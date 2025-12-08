@@ -93,13 +93,13 @@ const WorkshopProductionChart = ({ filterType, fabricType, startDate, endDate }:
     }
 
     return (
-        <div className="bg-white rounded-2xl p-4 shadow-lg hover:shadow-xl transition-shadow h-full">
-            <div className="mb-4 flex justify-between items-start">
+        <div className="bg-white rounded-xl md:rounded-2xl p-3 md:p-4 shadow-lg hover:shadow-xl transition-shadow h-full">
+            <div className="mb-3 md:mb-4 flex justify-between items-start">
                 <div>
-                    <h3 className="text-xl font-bold text-gray-900">Workshop Production</h3>
-                    <p className="text-sm text-gray-600 mt-1">Machine-wise production by workshop</p>
+                    <h3 className="text-base md:text-xl font-bold text-gray-900">Workshop Production</h3>
+                    <p className="text-xs md:text-sm text-gray-600 mt-1">Machine-wise production</p>
                 </div>
-                <div className="grid grid-cols-2 gap-x-4 gap-y-1 text-sm">
+                <div className="hidden sm:grid grid-cols-2 gap-x-4 gap-y-1 text-sm">
                     {machineKeys.map((machineKey, index) => (
                         <div key={machineKey} className="flex items-center gap-2">
                             <span className="w-3 h-3 rounded-full" style={{ backgroundColor: MACHINE_COLORS[index % MACHINE_COLORS.length] }}></span>
@@ -109,7 +109,7 @@ const WorkshopProductionChart = ({ filterType, fabricType, startDate, endDate }:
                 </div>
             </div>
 
-            <ResponsiveContainer width="100%" height={320}>
+            <ResponsiveContainer width="100%" height={250}>
                 <BarChart data={data} margin={{ top: 20, right: 10, left: -10, bottom: 5 }} barGap={4}>
                     <CartesianGrid strokeDasharray="3 3" stroke="#e5e7eb" vertical={false} />
                     <XAxis

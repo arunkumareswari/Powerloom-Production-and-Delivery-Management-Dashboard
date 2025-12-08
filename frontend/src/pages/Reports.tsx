@@ -73,8 +73,8 @@ const Reports = () => {
     <div className="space-y-6">
       {/* Header */}
       <div>
-        <h1 className="text-3xl font-bold text-gray-900">Reports</h1>
-        <p className="text-gray-600 mt-1">Generate and export production reports</p>
+        <h1 className="text-xl md:text-3xl font-bold text-gray-900">Reports</h1>
+        <p className="text-xs text-gray-600 hidden sm:block">Generate and export production reports</p>
       </div>
 
       {/* Date Range Filter */}

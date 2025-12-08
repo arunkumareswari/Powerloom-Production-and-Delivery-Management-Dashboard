@@ -92,57 +92,50 @@ const BeamDetails = ({ isAdmin }: { isAdmin: boolean }) => {
   const remainingPercentage = 100 - usedPercentage;
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-4 md:space-y-6">
       {/* Header */}
-      <div className="flex items-center justify-between">
-        <div className="flex items-center space-x-4">
+      <div className="flex items-center justify-between gap-2">
+        <div className="flex items-center space-x-2 md:space-x-4 min-w-0">
           <Link
             to={beam.status === 'completed' ? '/workshops?view=archive' : '/workshops'}
-            className="w-10 h-10 flex items-center justify-center rounded-xl bg-gray-100 hover:bg-gray-200 transition"
+            className="w-8 h-8 md:w-10 md:h-10 flex items-center justify-center rounded-lg md:rounded-xl bg-gray-100 hover:bg-gray-200 transition flex-shrink-0"
           >
-            <ArrowLeft className="w-5 h-5" />
+            <ArrowLeft className="w-4 h-4 md:w-5 md:h-5" />
           </Link>
-          <div>
-            <h1 className="text-3xl font-bold text-gray-900">{beam.beam_number}</h1>
-            <p className="text-gray-600 mt-1">
-              {beam.workshop_name} - Machine {beam.machine_number} • {beam.customer_name}
-            </p>
-          </div>
-        </div>
-        <div className="flex items-center space-x-3">
-          <span className={`px-4 py-2 rounded-xl font-semibold ${beam.status === 'active'
+          <h1 className="text-lg md:text-2xl font-bold text-gray-900 truncate">{beam.beam_number}</h1>
+          <span className={`px-2 py-1 text-xs rounded-lg font-semibold flex-shrink-0 ${beam.status === 'active'
             ? 'bg-green-100 text-green-700'
             : 'bg-gray-100 text-gray-700'
             }`}>
             {beam.status.toUpperCase()}
           </span>
-          {isAdmin && (
-            <>
-              <button
-                onClick={handleDeleteBeam}
-                className="p-2 text-red-600 hover:bg-red-50 rounded-lg transition"
-                title="Delete Beam"
-              >
-                <Trash2 className="w-5 h-5" />
-              </button>
-              {beam.status === 'active' && (
-                <button
-                  onClick={handleEndBeam}
-                  disabled={endingBeam}
-                  className="flex items-center space-x-2 px-4 py-2 bg-red-500 text-white rounded-xl hover:bg-red-600 transition font-semibold disabled:opacity-50"
-                >
-                  <XCircle className="w-4 h-4" />
-                  <span>{endingBeam ? 'Ending...' : 'End Beam'}</span>
-                </button>
-              )}
-            </>
-          )}
         </div>
+        {isAdmin && (
+          <div className="flex items-center space-x-2 flex-shrink-0">
+            <button
+              onClick={handleDeleteBeam}
+              className="p-1.5 md:p-2 text-red-600 hover:bg-red-50 rounded-lg transition"
+              title="Delete Beam"
+            >
+              <Trash2 className="w-4 h-4 md:w-5 md:h-5" />
+            </button>
+            {beam.status === 'active' && (
+              <button
+                onClick={handleEndBeam}
+                disabled={endingBeam}
+                className="flex items-center space-x-1 px-2 py-1.5 md:px-4 md:py-2 bg-red-500 text-white rounded-lg md:rounded-xl hover:bg-red-600 transition text-sm font-semibold disabled:opacity-50"
+              >
+                <XCircle className="w-3.5 h-3.5 md:w-4 md:h-4" />
+                <span>{endingBeam ? 'Ending...' : 'End Beam'}</span>
+              </button>
+            )}
+          </div>
+        )}
       </div>
 
       {/* Beam Info Cards */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-        <div className="bg-white rounded-2xl p-6 shadow-soft">
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 md:gap-6">
+        <div className="bg-white rounded-xl md:rounded-2xl p-4 md:p-6 shadow-soft">
           <div className="flex items-center justify-between">
             <div>
               <p className="text-sm text-gray-600">Total Meters</p>
@@ -152,7 +145,7 @@ const BeamDetails = ({ isAdmin }: { isAdmin: boolean }) => {
           </div>
         </div>
 
-        <div className="bg-white rounded-2xl p-6 shadow-soft">
+        <div className="bg-white rounded-xl md:rounded-2xl p-4 md:p-6 shadow-soft">
           <div className="flex items-center justify-between">
             <div>
               <p className="text-sm text-gray-600">Good Pieces</p>
@@ -162,7 +155,7 @@ const BeamDetails = ({ isAdmin }: { isAdmin: boolean }) => {
           </div>
         </div>
 
-        <div className="bg-white rounded-2xl p-6 shadow-soft">
+        <div className="bg-white rounded-xl md:rounded-2xl p-4 md:p-6 shadow-soft">
           <div className="flex items-center justify-between">
             <div>
               <p className="text-sm text-gray-600">Damaged</p>
@@ -172,7 +165,7 @@ const BeamDetails = ({ isAdmin }: { isAdmin: boolean }) => {
           </div>
         </div>
 
-        <div className="bg-white rounded-2xl p-6 shadow-soft">
+        <div className="bg-white rounded-xl md:rounded-2xl p-4 md:p-6 shadow-soft">
           <div className="flex items-center justify-between">
             <div>
               <p className="text-sm text-gray-600">Total Amount</p>
@@ -184,8 +177,8 @@ const BeamDetails = ({ isAdmin }: { isAdmin: boolean }) => {
       </div>
 
       {/* Meter Progress */}
-      <div className="bg-white rounded-2xl p-6 shadow-soft">
-        <h3 className="text-lg font-semibold mb-4">Meter Usage Progress</h3>
+      <div className="bg-white rounded-xl md:rounded-2xl p-4 md:p-6 shadow-soft">
+        <h3 className="text-lg font-semibold mb-3 md:mb-4">Meter Usage Progress</h3>
         <div className="space-y-3">
           <div className="flex justify-between text-sm">
             <span className="text-gray-600">
@@ -222,7 +215,7 @@ const BeamDetails = ({ isAdmin }: { isAdmin: boolean }) => {
       </div>
 
       {/* Deliveries Timeline */}
-      <div className="bg-white rounded-2xl p-6 shadow-soft">
+      <div className="bg-white rounded-xl md:rounded-2xl p-4 md:p-6 shadow-soft">
         <div className="flex items-center justify-between mb-6">
           <h3 className="text-lg font-semibold">Delivery History</h3>
           {isAdmin && (
@@ -245,55 +238,53 @@ const BeamDetails = ({ isAdmin }: { isAdmin: boolean }) => {
             {deliveries.map((delivery: any, idx: number) => (
               <div
                 key={delivery.id}
-                className="border border-gray-200 rounded-xl p-4 hover:border-primary-200 hover:shadow-md transition"
+                className="border border-gray-200 rounded-xl p-3 md:p-4 hover:border-primary-200 hover:shadow-md transition"
               >
-                <div className="flex items-start justify-between">
-                  <div className="flex-1">
-                    <div className="flex items-center space-x-3 mb-2">
-                      <Calendar className="w-4 h-4 text-gray-400" />
-                      <span className="font-semibold text-gray-900">
-                        {format(new Date(delivery.delivery_date), 'dd MMM yyyy')}
-                      </span>
-                      <span className="px-2 py-1 bg-primary-100 text-primary-700 text-xs rounded-full font-semibold">
-                        Delivery #{deliveries.length - idx}
-                      </span>
-                    </div>
+                <div className="flex items-start justify-between mb-2">
+                  <div className="flex items-center space-x-2">
+                    <Calendar className="w-4 h-4 text-gray-400" />
+                    <span className="font-semibold text-gray-900">
+                      {format(new Date(delivery.delivery_date), 'dd MMM yyyy')}
+                    </span>
+                  </div>
+                  <span className="px-2 py-1 bg-primary-100 text-primary-700 text-xs rounded-full font-semibold">
+                    Delivery #{deliveries.length - idx}
+                  </span>
+                </div>
 
-                    <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mt-3">
-                      <div>
-                        <p className="text-xs text-gray-600">Design</p>
-                        <p className="font-semibold text-gray-900">{delivery.design_name}</p>
-                      </div>
-                      <div>
-                        <p className="text-xs text-gray-600">Good Pieces</p>
-                        <p className="font-semibold text-green-600">{delivery.good_pieces}</p>
-                      </div>
-                      <div>
-                        <p className="text-xs text-gray-600">Damaged</p>
-                        <p className="font-semibold text-red-600">{delivery.damaged_pieces}</p>
-                      </div>
-                      <div>
-                        <p className="text-xs text-gray-600">Amount</p>
-                        <p className="font-semibold text-primary-600">₹{delivery.total_amount.toLocaleString()}</p>
-                      </div>
-                    </div>
-
-                    <div className="mt-3 flex items-center space-x-4 text-sm">
-                      <span className="text-gray-600">
-                        Price: <span className="font-semibold">₹{delivery.price_per_piece}</span>/piece
-                      </span>
-                      <span className="text-gray-600">
-                        Meters Used: <span className="font-semibold">{delivery.meters_used.toFixed(1)}m</span>
-                      </span>
-                    </div>
-
-                    {delivery.notes && (
-                      <div className="mt-3 bg-gray-50 rounded-lg p-3">
-                        <p className="text-sm text-gray-700">📝 {delivery.notes}</p>
-                      </div>
-                    )}
+                <div className="grid grid-cols-2 gap-x-6 gap-y-2 mt-3">
+                  <div>
+                    <p className="text-xs text-gray-600">Design</p>
+                    <p className="font-semibold text-gray-900">{delivery.design_name}</p>
+                  </div>
+                  <div>
+                    <p className="text-xs text-gray-600">Good Pieces</p>
+                    <p className="font-semibold text-green-600">{delivery.good_pieces}</p>
+                  </div>
+                  <div>
+                    <p className="text-xs text-gray-600">Damaged</p>
+                    <p className="font-semibold text-red-600">{delivery.damaged_pieces}</p>
+                  </div>
+                  <div>
+                    <p className="text-xs text-gray-600">Amount</p>
+                    <p className="font-semibold text-primary-600">₹{delivery.total_amount.toLocaleString()}</p>
                   </div>
                 </div>
+
+                <div className="mt-3 flex items-center space-x-4 text-sm">
+                  <span className="text-gray-600">
+                    Price: <span className="font-semibold">₹{delivery.price_per_piece}</span>/piece
+                  </span>
+                  <span className="text-gray-600">
+                    Meters Used: <span className="font-semibold">{delivery.meters_used.toFixed(1)}m</span>
+                  </span>
+                </div>
+
+                {delivery.notes && (
+                  <div className="mt-3 bg-gray-50 rounded-lg p-3">
+                    <p className="text-sm text-gray-700">📝 {delivery.notes}</p>
+                  </div>
+                )}
               </div>
             ))}
           </div>
@@ -301,43 +292,43 @@ const BeamDetails = ({ isAdmin }: { isAdmin: boolean }) => {
       </div>
 
       {/* Beam Details Card */}
-      <div className="bg-white rounded-2xl p-6 shadow-soft">
+      <div className="bg-white rounded-xl md:rounded-2xl p-4 md:p-6 shadow-soft">
         <h3 className="text-lg font-semibold mb-4">Beam Information</h3>
-        <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
+        <div className="grid grid-cols-2 gap-x-6 gap-y-3">
           <div>
-            <p className="text-sm text-gray-600">Start Date</p>
+            <p className="text-xs text-gray-600">Start Date</p>
             <p className="font-semibold text-gray-900">
               {format(new Date(beam.start_date), 'dd MMM yyyy')}
             </p>
           </div>
+          <div>
+            <p className="text-xs text-gray-600">Customer</p>
+            <p className="font-semibold text-gray-900">{beam.customer_name}</p>
+          </div>
+          <div>
+            <p className="text-xs text-gray-600">Workshop</p>
+            <p className="font-semibold text-gray-900">{beam.workshop_name}</p>
+          </div>
+          <div>
+            <p className="text-xs text-gray-600">Machine</p>
+            <p className="font-semibold text-gray-900">Machine {beam.machine_number}</p>
+          </div>
+          <div>
+            <p className="text-xs text-gray-600">Product Type</p>
+            <p className="font-semibold text-gray-900">{beam.fabric_type.toUpperCase()}</p>
+          </div>
           {beam.end_date && (
             <div>
-              <p className="text-sm text-gray-600">End Date</p>
+              <p className="text-xs text-gray-600">End Date</p>
               <p className="font-semibold text-gray-900">
                 {format(new Date(beam.end_date), 'dd MMM yyyy')}
               </p>
             </div>
           )}
-          <div>
-            <p className="text-sm text-gray-600">Customer</p>
-            <p className="font-semibold text-gray-900">{beam.customer_name}</p>
-          </div>
-          <div>
-            <p className="text-sm text-gray-600">Workshop</p>
-            <p className="font-semibold text-gray-900">{beam.workshop_name}</p>
-          </div>
-          <div>
-            <p className="text-sm text-gray-600">Machine</p>
-            <p className="font-semibold text-gray-900">Machine {beam.machine_number}</p>
-          </div>
-          <div>
-            <p className="text-sm text-gray-600">Product Type</p>
-            <p className="font-semibold text-gray-900">{beam.fabric_type.toUpperCase()}</p>
-          </div>
         </div>
         {beam.notes && (
           <div className="mt-4 bg-gray-50 rounded-xl p-4">
-            <p className="text-sm text-gray-600 mb-1">Notes</p>
+            <p className="text-xs text-gray-600 mb-1">Notes</p>
             <p className="text-gray-900">{beam.notes}</p>
           </div>
         )}

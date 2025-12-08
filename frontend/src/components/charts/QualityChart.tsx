@@ -61,13 +61,13 @@ const QualityChart = ({ filterType, fabricType, startDate, endDate }: FilterProp
         : '0';
 
     return (
-        <div className="bg-white rounded-2xl p-6 shadow-lg hover:shadow-xl transition-shadow">
-            <div className="mb-6 flex justify-between items-start">
+        <div className="bg-white rounded-xl md:rounded-2xl p-3 md:p-6 shadow-lg hover:shadow-xl transition-shadow">
+            <div className="mb-3 md:mb-6 flex justify-between items-start">
                 <div>
-                    <h3 className="text-xl font-bold text-gray-900">Machine Quality Analysis</h3>
-                    <p className="text-sm text-gray-600 mt-1">Good vs Damaged pieces by machine</p>
+                    <h3 className="text-base md:text-xl font-bold text-gray-900">Machine Quality Analysis</h3>
+                    <p className="text-xs md:text-sm text-gray-600 mt-1">Good vs Damaged pieces</p>
                 </div>
-                <div className="flex flex-col gap-2 text-sm">
+                <div className="hidden sm:flex flex-col gap-2 text-sm">
                     <div className="flex items-center gap-2">
                         <span className="w-3 h-3 rounded-full" style={{ backgroundColor: '#41b8d5' }}></span>
                         <span className="text-gray-600">Good Pieces</span>
@@ -79,7 +79,7 @@ const QualityChart = ({ filterType, fabricType, startDate, endDate }: FilterProp
                 </div>
             </div>
 
-            <ResponsiveContainer width="100%" height={350}>
+            <ResponsiveContainer width="100%" height={280}>
                 <BarChart data={data} margin={{ top: 10, right: 10, left: -10, bottom: 5 }}>
                     <CartesianGrid strokeDasharray="3 3" stroke="#e5e7eb" vertical={false} />
                     <XAxis
@@ -146,23 +146,23 @@ const QualityChart = ({ filterType, fabricType, startDate, endDate }: FilterProp
                 </BarChart>
             </ResponsiveContainer>
 
-            <div className="mt-4 pt-4 border-t border-gray-200">
-                <div className="grid grid-cols-4 gap-4">
+            <div className="mt-3 pt-3 border-t border-gray-200">
+                <div className="grid grid-cols-2 md:grid-cols-4 gap-3 md:gap-4">
                     <div className="text-center">
                         <p className="text-xs text-gray-500 uppercase tracking-wide font-medium">Total Machines</p>
-                        <p className="text-xl font-bold text-gray-900 mt-1">{data.length}</p>
+                        <p className="text-lg md:text-xl font-bold text-gray-900 mt-1">{data.length}</p>
                     </div>
                     <div className="text-center">
                         <p className="text-xs text-gray-500 uppercase tracking-wide font-medium">Good Pieces</p>
-                        <p className="text-xl font-bold text-green-600 mt-1">{totalGood.toLocaleString()}</p>
+                        <p className="text-lg md:text-xl font-bold text-green-600 mt-1">{totalGood.toLocaleString()}</p>
                     </div>
                     <div className="text-center">
                         <p className="text-xs text-gray-500 uppercase tracking-wide font-medium">Damaged</p>
-                        <p className="text-xl font-bold text-red-600 mt-1">{totalDamaged.toLocaleString()}</p>
+                        <p className="text-lg md:text-xl font-bold text-red-600 mt-1">{totalDamaged.toLocaleString()}</p>
                     </div>
                     <div className="text-center">
                         <p className="text-xs text-gray-500 uppercase tracking-wide font-medium">Quality Rate</p>
-                        <p className="text-xl font-bold text-primary-600 mt-1">{qualityRate}%</p>
+                        <p className="text-lg md:text-xl font-bold text-primary-600 mt-1">{qualityRate}%</p>
                     </div>
                 </div>
             </div>

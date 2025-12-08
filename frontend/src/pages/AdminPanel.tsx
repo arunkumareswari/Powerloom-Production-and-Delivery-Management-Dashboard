@@ -246,8 +246,8 @@ const AdminPanel = () => {
                 <div className="flex items-center space-x-3">
                     <Settings2 className="w-8 h-8 text-primary-600" />
                     <div>
-                        <h1 className="text-3xl font-bold text-gray-900">Admin Management Panel</h1>
-                        <p className="text-gray-600 mt-1">Manage workshops, machines, customers, and presets</p>
+                        <h1 className="text-xl md:text-3xl font-bold text-gray-900">Admin Management Panel</h1>
+                        <p className="text-xs text-gray-600 hidden sm:block">Manage workshops, machines, customers, and presets</p>
                     </div>
                 </div>
             </div>
@@ -268,7 +268,23 @@ const AdminPanel = () => {
 
             <div className="bg-white rounded-2xl shadow-soft overflow-hidden">
                 <div className="border-b border-gray-200">
-                    <div className="flex space-x-1 p-2">
+                    {/* Mobile Dropdown */}
+                    <div className="md:hidden p-3">
+                        <select
+                            value={activeTab}
+                            onChange={(e) => { setActiveTab(e.target.value); setSuccess(''); setError(''); }}
+                            className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-primary-500 outline-none font-semibold"
+                        >
+                            {tabs.map((tab) => (
+                                <option key={tab.id} value={tab.id}>
+                                    {tab.label} ({tab.count})
+                                </option>
+                            ))}
+                        </select>
+                    </div>
+
+                    {/* Desktop Tabs */}
+                    <div className="hidden md:flex space-x-1 p-2">
                         {tabs.map((tab) => (
                             <button key={tab.id} onClick={() => { setActiveTab(tab.id); setSuccess(''); setError(''); }}
                                 className={`flex-1 px-6 py-3 rounded-xl font-semibold transition ${activeTab === tab.id ? 'bg-primary-500 text-white' : 'text-gray-600 hover:bg-gray-100'}`}>

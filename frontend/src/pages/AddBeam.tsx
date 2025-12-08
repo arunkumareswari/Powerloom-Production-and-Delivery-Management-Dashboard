@@ -120,8 +120,8 @@ const AddBeam = () => {
           <ArrowLeft className="w-5 h-5" />
         </button>
         <div>
-          <h1 className="text-3xl font-bold text-gray-900">Start New Beam</h1>
-          <p className="text-gray-600 mt-1">Enter beam details to begin production</p>
+          <h1 className="text-xl md:text-3xl font-bold text-gray-900">Start New Beam</h1>
+          <p className="text-xs text-gray-600 hidden sm:block">Enter beam details to begin production</p>
         </div>
       </div>
 
@@ -145,7 +145,7 @@ const AddBeam = () => {
               type="text"
               value={formData.beam_number}
               onChange={(e) => setFormData({ ...formData, beam_number: e.target.value })}
-              className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-primary-500 focus:border-transparent outline-none"
+              className="w-full px-3 py-2 md:px-4 md:py-3 text-sm md:text-base border border-gray-300 rounded-lg md:rounded-xl focus:ring-2 focus:ring-primary-500 focus:border-transparent outline-none"
               placeholder="WB12345"
               required
             />
@@ -160,7 +160,7 @@ const AddBeam = () => {
             <select
               value={formData.customer_id}
               onChange={(e) => setFormData({ ...formData, customer_id: e.target.value })}
-              className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-primary-500 focus:border-transparent outline-none"
+              className="w-full px-3 py-2 md:px-4 md:py-3 text-sm md:text-base border border-gray-300 rounded-lg md:rounded-xl focus:ring-2 focus:ring-primary-500 focus:border-transparent outline-none"
               required
             >
               <option value="">Select Customer</option>
@@ -181,7 +181,7 @@ const AddBeam = () => {
             <select
               value={selectedWorkshop}
               onChange={(e) => handleWorkshopChange(e.target.value)}
-              className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-primary-500 focus:border-transparent outline-none"
+              className="w-full px-3 py-2 md:px-4 md:py-3 text-sm md:text-base border border-gray-300 rounded-lg md:rounded-xl focus:ring-2 focus:ring-primary-500 focus:border-transparent outline-none"
               required
             >
               <option value="">Select Workshop</option>
@@ -202,7 +202,7 @@ const AddBeam = () => {
             <select
               value={formData.machine_id}
               onChange={(e) => setFormData({ ...formData, machine_id: e.target.value })}
-              className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-primary-500 focus:border-transparent outline-none"
+              className="w-full px-3 py-2 md:px-4 md:py-3 text-sm md:text-base border border-gray-300 rounded-lg md:rounded-xl focus:ring-2 focus:ring-primary-500 focus:border-transparent outline-none"
               required
               disabled={!selectedWorkshop}
             >
@@ -231,7 +231,7 @@ const AddBeam = () => {
                   setFormData({ ...formData, total_beam_meters: value });
                 }
               }}
-              className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-primary-500 focus:border-transparent outline-none"
+              className="w-full px-3 py-2 md:px-4 md:py-3 text-sm md:text-base border border-gray-300 rounded-lg md:rounded-xl focus:ring-2 focus:ring-primary-500 focus:border-transparent outline-none"
               placeholder="1000"
               required
             />
@@ -253,7 +253,7 @@ const AddBeam = () => {
                   setFormData({ ...formData, meters_per_piece: value });
                 }
               }}
-              className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-primary-500 focus:border-transparent outline-none"
+              className="w-full px-3 py-2 md:px-4 md:py-3 text-sm md:text-base border border-gray-300 rounded-lg md:rounded-xl focus:ring-2 focus:ring-primary-500 focus:border-transparent outline-none"
               placeholder="4 (veshti) or 6 (saree)"
               required
             />
@@ -269,7 +269,7 @@ const AddBeam = () => {
               type="date"
               value={formData.start_date}
               onChange={(e) => setFormData({ ...formData, start_date: e.target.value })}
-              className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-primary-500 focus:border-transparent outline-none"
+              className="w-full px-3 py-2 md:px-4 md:py-3 text-sm md:text-base border border-gray-300 rounded-lg md:rounded-xl focus:ring-2 focus:ring-primary-500 focus:border-transparent outline-none"
               required
             />
             <p className="text-xs text-gray-500 mt-1">Beam start date</p>
