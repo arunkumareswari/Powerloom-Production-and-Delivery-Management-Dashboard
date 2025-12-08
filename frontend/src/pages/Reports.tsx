@@ -1,6 +1,8 @@
 import { useState } from 'react';
 import { reportAPI } from '../services/api';
 import { FileText, Download, Calendar } from 'lucide-react';
+import jsPDF from 'jspdf';
+import autoTable from 'jspdf-autotable';
 
 const Reports = () => {
   const [loading, setLoading] = useState(false);
@@ -26,16 +28,18 @@ const Reports = () => {
     if (reportData.length === 0) return;
 
     const headers = [
-      'Beam Number', 'Workshop', 'Customer', 'Product Type',
-      'Start Date', 'End Date', 'Total Meters', 'Total Pieces',
+      'Workshop', 'Machine No', 'Beam Number', 'Product Type',
+      'Status', 'Customer', 'Start Date', 'End Date', 'Total Meters', 'Total Pieces',
       'Damaged Pieces', 'Total Amount'
     ];
 
     const csvData = reportData.map(beam => [
-      beam.beam_number,
       beam.workshop,
-      beam.customer,
+      beam.machine_number || 'N/A',
+      beam.beam_number,
       beam.fabric_type,
+      beam.status === 'completed' || beam.end_date ? 'Completed' : 'Running',
+      beam.customer,
       beam.start_date,
       beam.end_date || 'Active',
       beam.total_beam_meters,
@@ -56,6 +60,52 @@ const Reports = () => {
     a.download = `powerloom_report_${dateRange.start_date}_to_${dateRange.end_date}.csv`;
     a.click();
     window.URL.revokeObjectURL(url);
+  };
+
+  const exportToPDF = () => {
+    if (reportData.length === 0) return;
+
+    const doc = new jsPDF('landscape');
+
+    // Title
+    doc.setFontSize(18);
+    doc.setTextColor(40, 40, 40);
+    doc.text('Powerloom Production Report', 14, 22);
+
+    // Date range
+    doc.setFontSize(11);
+    doc.setTextColor(100, 100, 100);
+    doc.text(`Period: ${dateRange.start_date} to ${dateRange.end_date}`, 14, 30);
+
+    // Table data
+    const tableData = reportData.map(beam => [
+      beam.workshop,
+      beam.machine_number || 'N/A',
+      beam.beam_number,
+      beam.fabric_type.toUpperCase(),
+      beam.customer,
+      beam.start_date,
+      beam.end_date || 'Running',
+      `${beam.total_beam_meters}m`,
+      beam.total_pieces.toString(),
+      beam.total_damaged.toString(),
+      `Rs.${parseFloat(beam.total_amount).toLocaleString()}`
+    ]);
+
+    // Add table
+    autoTable(doc, {
+      head: [['Workshop', 'Machine', 'Beam No', 'Type', 'Customer', 'Start', 'End', 'Meters', 'Good', 'Damaged', 'Amount']],
+      body: tableData,
+      startY: 38,
+      styles: { fontSize: 8, cellPadding: 2 },
+      headStyles: { fillColor: [20, 184, 166], textColor: 255 },
+      alternateRowStyles: { fillColor: [245, 245, 245] },
+      foot: [['', '', '', 'TOTAL', '', '', '', '', totals?.totalPieces.toString() || '0', totals?.totalDamaged.toString() || '0', `Rs.${totals?.totalAmount.toLocaleString() || '0'}`]],
+      footStyles: { fillColor: [20, 184, 166], textColor: 255, fontStyle: 'bold' },
+    });
+
+    // Save
+    doc.save(`powerloom_report_${dateRange.start_date}_to_${dateRange.end_date}.pdf`);
   };
 
   const calculateTotals = () => {
@@ -186,27 +236,35 @@ const Reports = () => {
         <div className="bg-white dark:bg-gray-800 rounded-2xl p-6 shadow-soft">
           <div className="flex items-center justify-between mb-6">
             <h3 className="text-lg font-semibold text-gray-900 dark:text-white">Beam Details Report</h3>
-            <button
-              onClick={exportToCSV}
-              className="flex items-center space-x-2 px-4 py-2 bg-green-500 text-white rounded-xl hover:bg-green-600 transition"
-            >
-              <Download className="w-4 h-4" />
-              <span>Export CSV</span>
-            </button>
+            <div className="flex items-center space-x-2">
+              <button
+                onClick={exportToPDF}
+                className="flex items-center space-x-2 px-4 py-2 bg-red-500 text-white rounded-xl hover:bg-red-600 transition"
+              >
+                <Download className="w-4 h-4" />
+                <span>Export PDF</span>
+              </button>
+              <button
+                onClick={exportToCSV}
+                className="flex items-center space-x-2 px-4 py-2 bg-green-500 text-white rounded-xl hover:bg-green-600 transition"
+              >
+                <Download className="w-4 h-4" />
+                <span>Export CSV</span>
+              </button>
+            </div>
           </div>
 
           <div className="overflow-x-auto">
             <table className="w-full">
               <thead>
                 <tr className="border-b-2 border-gray-200 dark:border-gray-600">
-                  <th className="text-left py-3 px-4 font-semibold text-gray-700 dark:text-gray-300">Machine No</th>
-                  <th className="text-left py-3 px-4 font-semibold text-gray-700 dark:text-gray-300">Beam Number</th>
                   <th className="text-left py-3 px-4 font-semibold text-gray-700 dark:text-gray-300">Workshop</th>
-                  <th className="text-left py-3 px-4 font-semibold text-gray-700 dark:text-gray-300">Customer</th>
-                  <th className="text-left py-3 px-4 font-semibold text-gray-700 dark:text-gray-300">Product Type</th>
+                  <th className="text-left py-3 px-4 font-semibold text-gray-700 dark:text-gray-300">Machine</th>
+                  <th className="text-left py-3 px-4 font-semibold text-gray-700 dark:text-gray-300">Beam No</th>
+                  <th className="text-left py-3 px-4 font-semibold text-gray-700 dark:text-gray-300">Type</th>
                   <th className="text-left py-3 px-4 font-semibold text-gray-700 dark:text-gray-300">Status</th>
-                  <th className="text-right py-3 px-4 font-semibold text-gray-700 dark:text-gray-300">Total Meters</th>
-                  <th className="text-right py-3 px-4 font-semibold text-gray-700 dark:text-gray-300">Good Pieces</th>
+                  <th className="text-right py-3 px-4 font-semibold text-gray-700 dark:text-gray-300">Meters</th>
+                  <th className="text-right py-3 px-4 font-semibold text-gray-700 dark:text-gray-300">Good</th>
                   <th className="text-right py-3 px-4 font-semibold text-gray-700 dark:text-gray-300">Damaged</th>
                   <th className="text-right py-3 px-4 font-semibold text-gray-700 dark:text-gray-300">Amount</th>
                 </tr>
@@ -214,10 +272,9 @@ const Reports = () => {
               <tbody>
                 {reportData.map((beam, idx) => (
                   <tr key={idx} className="border-b border-gray-100 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-700">
+                    <td className="py-3 px-4 text-gray-700 dark:text-gray-300">{beam.workshop}</td>
                     <td className="py-3 px-4 font-semibold text-gray-900 dark:text-white">{beam.machine_number || 'N/A'}</td>
                     <td className="py-3 px-4 font-mono font-semibold text-gray-900 dark:text-white">{beam.beam_number}</td>
-                    <td className="py-3 px-4 text-gray-700 dark:text-gray-300">{beam.workshop}</td>
-                    <td className="py-3 px-4 text-gray-700 dark:text-gray-300">{beam.customer}</td>
                     <td className="py-3 px-4">
                       <span className="px-2 py-1 bg-blue-100 dark:bg-blue-900 text-blue-700 dark:text-blue-300 text-xs rounded-full font-semibold">
                         {beam.fabric_type.toUpperCase()}
@@ -242,7 +299,7 @@ const Reports = () => {
               </tbody>
               <tfoot>
                 <tr className="border-t-2 border-gray-300 dark:border-gray-600 bg-gray-50 dark:bg-gray-700">
-                  <td colSpan={7} className="py-3 px-4 font-bold text-gray-900 dark:text-white">TOTAL</td>
+                  <td colSpan={6} className="py-3 px-4 font-bold text-gray-900 dark:text-white">TOTAL</td>
                   <td className="py-3 px-4 text-right font-bold text-green-600 dark:text-green-400">{totals.totalPieces}</td>
                   <td className="py-3 px-4 text-right font-bold text-red-600 dark:text-red-400">{totals.totalDamaged}</td>
                   <td className="py-3 px-4 text-right font-bold text-primary-600 dark:text-primary-400">
