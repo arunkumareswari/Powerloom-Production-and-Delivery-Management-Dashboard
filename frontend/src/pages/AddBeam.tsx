@@ -102,8 +102,8 @@ const AddBeam = () => {
       <div className="flex items-center justify-center h-96">
         <div className="text-center">
           <CheckCircle className="w-16 h-16 text-green-500 mx-auto mb-4" />
-          <h2 className="text-2xl font-bold text-gray-900 mb-2">Beam Started Successfully!</h2>
-          <p className="text-gray-600">Redirecting to workshops...</p>
+          <h2 className="text-2xl font-bold text-gray-900 dark:text-white mb-2">Beam Started Successfully!</h2>
+          <p className="text-gray-600 dark:text-gray-400">Redirecting to workshops...</p>
         </div>
       </div>
     );
@@ -115,52 +115,52 @@ const AddBeam = () => {
       <div className="flex items-center space-x-4 mb-6">
         <button
           onClick={() => navigate('/workshops')}
-          className="w-10 h-10 flex items-center justify-center rounded-xl bg-gray-100 hover:bg-gray-200 transition"
+          className="w-10 h-10 flex items-center justify-center rounded-xl bg-gray-100 dark:bg-gray-700 hover:bg-gray-200 dark:hover:bg-gray-600 transition"
         >
-          <ArrowLeft className="w-5 h-5" />
+          <ArrowLeft className="w-5 h-5 dark:text-white" />
         </button>
         <div>
-          <h1 className="text-xl md:text-3xl font-bold text-gray-900">Start New Beam</h1>
-          <p className="text-xs text-gray-600 hidden sm:block">Enter beam details to begin production</p>
+          <h1 className="text-xl md:text-3xl font-bold text-gray-900 dark:text-white">Start New Beam</h1>
+          <p className="text-xs text-gray-600 dark:text-gray-400 hidden sm:block">Enter beam details to begin production</p>
         </div>
       </div>
 
       {error && (
-        <div className="bg-red-50 border border-red-200 rounded-xl p-4 flex items-start space-x-3 mb-6">
-          <AlertCircle className="w-5 h-5 text-red-600 flex-shrink-0 mt-0.5" />
-          <p className="text-sm text-red-800">{error}</p>
+        <div className="bg-red-50 dark:bg-red-900/30 border border-red-200 dark:border-red-800 rounded-xl p-4 flex items-start space-x-3 mb-6">
+          <AlertCircle className="w-5 h-5 text-red-600 dark:text-red-400 flex-shrink-0 mt-0.5" />
+          <p className="text-sm text-red-800 dark:text-red-300">{error}</p>
         </div>
       )}
 
       {/* Main Beam Form */}
-      <form onSubmit={handleSubmit} className="bg-white rounded-2xl p-8 shadow-soft">
+      <form onSubmit={handleSubmit} className="bg-white dark:bg-gray-800 rounded-2xl p-8 shadow-soft">
         {/* Grid Layout - 3 columns on desktop, 1 on mobile */}
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 mb-6">
           {/* Beam Number */}
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">
+            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
               Beam Number <span className="text-red-500">*</span>
             </label>
             <input
               type="text"
               value={formData.beam_number}
               onChange={(e) => setFormData({ ...formData, beam_number: e.target.value })}
-              className="w-full px-3 py-2 md:px-4 md:py-3 text-sm md:text-base border border-gray-300 rounded-lg md:rounded-xl focus:ring-2 focus:ring-primary-500 focus:border-transparent outline-none"
+              className="w-full px-3 py-2 md:px-4 md:py-3 text-sm md:text-base border border-gray-300 dark:border-gray-600 rounded-lg md:rounded-xl bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-primary-500 focus:border-transparent outline-none"
               placeholder="WB12345"
               required
             />
-            <p className="text-xs text-gray-500 mt-1">Warp beam number</p>
+            <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">Warp beam number</p>
           </div>
 
           {/* Customer */}
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">
+            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
               Customer <span className="text-red-500">*</span>
             </label>
             <select
               value={formData.customer_id}
               onChange={(e) => setFormData({ ...formData, customer_id: e.target.value })}
-              className="w-full px-3 py-2 md:px-4 md:py-3 text-sm md:text-base border border-gray-300 rounded-lg md:rounded-xl focus:ring-2 focus:ring-primary-500 focus:border-transparent outline-none"
+              className="w-full px-3 py-2 md:px-4 md:py-3 text-sm md:text-base border border-gray-300 dark:border-gray-600 rounded-lg md:rounded-xl bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-primary-500 focus:border-transparent outline-none"
               required
             >
               <option value="">Select Customer</option>
@@ -170,18 +170,18 @@ const AddBeam = () => {
                 </option>
               ))}
             </select>
-            <p className="text-xs text-gray-500 mt-1">Customer for this beam</p>
+            <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">Customer for this beam</p>
           </div>
 
           {/* Workshop */}
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">
+            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
               Workshop <span className="text-red-500">*</span>
             </label>
             <select
               value={selectedWorkshop}
               onChange={(e) => handleWorkshopChange(e.target.value)}
-              className="w-full px-3 py-2 md:px-4 md:py-3 text-sm md:text-base border border-gray-300 rounded-lg md:rounded-xl focus:ring-2 focus:ring-primary-500 focus:border-transparent outline-none"
+              className="w-full px-3 py-2 md:px-4 md:py-3 text-sm md:text-base border border-gray-300 dark:border-gray-600 rounded-lg md:rounded-xl bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-primary-500 focus:border-transparent outline-none"
               required
             >
               <option value="">Select Workshop</option>
@@ -191,18 +191,18 @@ const AddBeam = () => {
                 </option>
               ))}
             </select>
-            <p className="text-xs text-gray-500 mt-1">Production workshop</p>
+            <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">Production workshop</p>
           </div>
 
           {/* Machine */}
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">
+            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
               Machine <span className="text-red-500">*</span>
             </label>
             <select
               value={formData.machine_id}
               onChange={(e) => setFormData({ ...formData, machine_id: e.target.value })}
-              className="w-full px-3 py-2 md:px-4 md:py-3 text-sm md:text-base border border-gray-300 rounded-lg md:rounded-xl focus:ring-2 focus:ring-primary-500 focus:border-transparent outline-none"
+              className="w-full px-3 py-2 md:px-4 md:py-3 text-sm md:text-base border border-gray-300 dark:border-gray-600 rounded-lg md:rounded-xl bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-primary-500 focus:border-transparent outline-none disabled:opacity-50"
               required
               disabled={!selectedWorkshop}
             >
@@ -213,12 +213,12 @@ const AddBeam = () => {
                 </option>
               ))}
             </select>
-            <p className="text-xs text-gray-500 mt-1">{!selectedWorkshop ? 'Select workshop first' : 'Machine for production'}</p>
+            <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">{!selectedWorkshop ? 'Select workshop first' : 'Machine for production'}</p>
           </div>
 
           {/* Total Beam Meters */}
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">
+            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
               Total Beam Meters <span className="text-red-500">*</span>
             </label>
             <input
@@ -231,16 +231,16 @@ const AddBeam = () => {
                   setFormData({ ...formData, total_beam_meters: value });
                 }
               }}
-              className="w-full px-3 py-2 md:px-4 md:py-3 text-sm md:text-base border border-gray-300 rounded-lg md:rounded-xl focus:ring-2 focus:ring-primary-500 focus:border-transparent outline-none"
+              className="w-full px-3 py-2 md:px-4 md:py-3 text-sm md:text-base border border-gray-300 dark:border-gray-600 rounded-lg md:rounded-xl bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-primary-500 focus:border-transparent outline-none"
               placeholder="1000"
               required
             />
-            <p className="text-xs text-gray-500 mt-1">Total meters in warp beam</p>
+            <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">Total meters in warp beam</p>
           </div>
 
           {/* Start Date */}
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">
+            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
               Meters per Piece <span className="text-red-500">*</span>
             </label>
             <input
@@ -253,26 +253,26 @@ const AddBeam = () => {
                   setFormData({ ...formData, meters_per_piece: value });
                 }
               }}
-              className="w-full px-3 py-2 md:px-4 md:py-3 text-sm md:text-base border border-gray-300 rounded-lg md:rounded-xl focus:ring-2 focus:ring-primary-500 focus:border-transparent outline-none"
+              className="w-full px-3 py-2 md:px-4 md:py-3 text-sm md:text-base border border-gray-300 dark:border-gray-600 rounded-lg md:rounded-xl bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-primary-500 focus:border-transparent outline-none"
               placeholder="4 (veshti) or 6 (saree)"
               required
             />
-            <p className="text-xs text-gray-500 mt-1">Meters per piece</p>
+            <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">Meters per piece</p>
           </div>
 
           {/* Start Date */}
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">
+            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
               Start Date <span className="text-red-500">*</span>
             </label>
             <input
               type="date"
               value={formData.start_date}
               onChange={(e) => setFormData({ ...formData, start_date: e.target.value })}
-              className="w-full px-3 py-2 md:px-4 md:py-3 text-sm md:text-base border border-gray-300 rounded-lg md:rounded-xl focus:ring-2 focus:ring-primary-500 focus:border-transparent outline-none"
+              className="w-full px-3 py-2 md:px-4 md:py-3 text-sm md:text-base border border-gray-300 dark:border-gray-600 rounded-lg md:rounded-xl bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-primary-500 focus:border-transparent outline-none"
               required
             />
-            <p className="text-xs text-gray-500 mt-1">Beam start date</p>
+            <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">Beam start date</p>
           </div>
         </div>
 

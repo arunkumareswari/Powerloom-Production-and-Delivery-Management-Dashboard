@@ -93,17 +93,17 @@ const WorkshopProductionChart = ({ filterType, fabricType, startDate, endDate }:
     }
 
     return (
-        <div className="bg-white rounded-xl md:rounded-2xl p-3 md:p-4 shadow-lg hover:shadow-xl transition-shadow h-full">
+        <div className="bg-white dark:bg-gray-800 rounded-xl md:rounded-2xl p-3 md:p-4 shadow-lg hover:shadow-xl transition-shadow h-full">
             <div className="mb-3 md:mb-4 flex justify-between items-start">
                 <div>
-                    <h3 className="text-base md:text-xl font-bold text-gray-900">Workshop Production</h3>
-                    <p className="text-xs md:text-sm text-gray-600 mt-1">Machine-wise production</p>
+                    <h3 className="text-base md:text-xl font-bold text-gray-900 dark:text-white">Workshop Production</h3>
+                    <p className="text-xs md:text-sm text-gray-600 dark:text-gray-400 mt-1">Machine-wise production</p>
                 </div>
                 <div className="hidden sm:grid grid-cols-2 gap-x-4 gap-y-1 text-sm">
                     {machineKeys.map((machineKey, index) => (
                         <div key={machineKey} className="flex items-center gap-2">
                             <span className="w-3 h-3 rounded-full" style={{ backgroundColor: MACHINE_COLORS[index % MACHINE_COLORS.length] }}></span>
-                            <span className="text-gray-600">Machine {machineKey.replace('machine_', '')}</span>
+                            <span className="text-gray-600 dark:text-gray-300">Machine {machineKey.replace('machine_', '')}</span>
                         </div>
                     ))}
                 </div>

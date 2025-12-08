@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { Outlet, Link, useLocation } from 'react-router-dom';
-import { LayoutDashboard, Factory, FileText, Settings, LogOut, Lock, Plus, Package, Sliders, Menu, X } from 'lucide-react';
+import { LayoutDashboard, Factory, FileText, Settings, LogOut, Lock, Plus, Package, Sliders, Menu, X, Moon, Sun } from 'lucide-react';
+import { useTheme } from '../context/ThemeContext';
 
 interface LayoutProps {
   isAdmin: boolean;
@@ -10,17 +11,20 @@ interface LayoutProps {
 const Layout = ({ isAdmin, onLogout }: LayoutProps) => {
   const location = useLocation();
   const [sidebarOpen, setSidebarOpen] = useState(false);
+  const { theme, toggleTheme } = useTheme();
 
   const isActive = (path: string) => {
-    return location.pathname === path ? 'bg-primary-100 text-primary-700' : 'text-gray-700 hover:bg-gray-100';
+    return location.pathname === path
+      ? 'bg-primary-100 dark:bg-primary-900 text-primary-700 dark:text-primary-300'
+      : 'text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700';
   };
 
   const closeSidebar = () => setSidebarOpen(false);
 
   return (
-    <div className="min-h-screen bg-gray-50">
+    <div className="min-h-screen bg-gray-50 dark:bg-gray-900 transition-colors">
       {/* Navbar */}
-      <nav className="bg-white shadow-soft sticky top-0 z-50">
+      <nav className="bg-white dark:bg-gray-800 shadow-soft sticky top-0 z-50">
         <div className="px-4 sm:px-6 lg:px-8">
           <div className="flex justify-between items-center h-14 md:h-16">
             <div className="flex items-center space-x-2 md:space-x-3">
@@ -36,12 +40,24 @@ const Layout = ({ isAdmin, onLogout }: LayoutProps) => {
                 <Factory className="w-5 h-5 md:w-6 md:h-6 text-white" />
               </div>
               <div>
-                <h1 className="text-base md:text-xl font-bold text-gray-900">Powerloom Dashboard</h1>
-                <p className="text-xs text-gray-500 hidden sm:block">Production Management</p>
+                <h1 className="text-base md:text-xl font-bold text-gray-900 dark:text-white">Powerloom Dashboard</h1>
+                <p className="text-xs text-gray-500 dark:text-gray-400 hidden sm:block">Production Management</p>
               </div>
             </div>
 
             <div className="flex items-center space-x-2 md:space-x-4">
+              {/* Theme Toggle */}
+              <button
+                onClick={toggleTheme}
+                className="p-2 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700 transition"
+                title={theme === 'light' ? 'Switch to Dark Mode' : 'Switch to Light Mode'}
+              >
+                {theme === 'light' ? (
+                  <Moon className="w-5 h-5 text-gray-600" />
+                ) : (
+                  <Sun className="w-5 h-5 text-yellow-400" />
+                )}
+              </button>
               {isAdmin ? (
                 <>
                   <span className="text-xs md:text-sm text-gray-600 bg-green-100 px-2 md:px-3 py-1 rounded-full hidden sm:inline">
@@ -81,10 +97,10 @@ const Layout = ({ isAdmin, onLogout }: LayoutProps) => {
         {/* Sidebar */}
         <aside className={`
           fixed md:sticky top-14 md:top-16 left-0 h-[calc(100vh-56px)] md:h-[calc(100vh-64px)]
-          w-64 bg-white shadow-lg z-40
+          w-64 bg-white dark:bg-gray-800 shadow-lg z-40
           transform transition-transform duration-300 ease-in-out
           ${sidebarOpen ? 'translate-x-0' : '-translate-x-full md:translate-x-0'}
-          md:ml-2 md:mt-2 md:mb-2 md:rounded-2xl md:min-h-screen md:self-start
+          md:ml-6 md:mt-2 md:mb-2 md:rounded-2xl md:min-h-screen md:self-start
         `}>
           <nav className="p-4 space-y-2">
             <Link
@@ -160,10 +176,8 @@ const Layout = ({ isAdmin, onLogout }: LayoutProps) => {
         </aside>
 
         {/* Main Content */}
-        <main className="flex-1 p-3 md:p-6 min-w-0">
-          <div className="max-w-7xl mx-auto">
-            <Outlet />
-          </div>
+        <main className="flex-1 p-3 md:pl-4 md:pr-6 md:py-6 min-w-0">
+          <Outlet />
         </main>
       </div>
     </div>

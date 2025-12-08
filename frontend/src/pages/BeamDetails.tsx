@@ -98,11 +98,11 @@ const BeamDetails = ({ isAdmin }: { isAdmin: boolean }) => {
         <div className="flex items-center space-x-2 md:space-x-4 min-w-0">
           <Link
             to={beam.status === 'completed' ? '/workshops?view=archive' : '/workshops'}
-            className="w-8 h-8 md:w-10 md:h-10 flex items-center justify-center rounded-lg md:rounded-xl bg-gray-100 hover:bg-gray-200 transition flex-shrink-0"
+            className="w-8 h-8 md:w-10 md:h-10 flex items-center justify-center rounded-lg md:rounded-xl bg-gray-100 dark:bg-gray-700 hover:bg-gray-200 dark:hover:bg-gray-600 transition flex-shrink-0"
           >
-            <ArrowLeft className="w-4 h-4 md:w-5 md:h-5" />
+            <ArrowLeft className="w-4 h-4 md:w-5 md:h-5 dark:text-white" />
           </Link>
-          <h1 className="text-lg md:text-2xl font-bold text-gray-900 truncate">{beam.beam_number}</h1>
+          <h1 className="text-lg md:text-2xl font-bold text-gray-900 dark:text-white truncate">{beam.beam_number}</h1>
           <span className={`px-2 py-1 text-xs rounded-lg font-semibold flex-shrink-0 ${beam.status === 'active'
             ? 'bg-green-100 text-green-700'
             : 'bg-gray-100 text-gray-700'
@@ -135,41 +135,41 @@ const BeamDetails = ({ isAdmin }: { isAdmin: boolean }) => {
 
       {/* Beam Info Cards */}
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 md:gap-6">
-        <div className="bg-white rounded-xl md:rounded-2xl p-4 md:p-6 shadow-soft">
+        <div className="bg-white dark:bg-gray-800 rounded-xl md:rounded-2xl p-4 md:p-6 shadow-soft">
           <div className="flex items-center justify-between">
             <div>
-              <p className="text-sm text-gray-600">Total Meters</p>
-              <p className="text-2xl font-bold text-gray-900 mt-2">{beam.total_beam_meters}m</p>
+              <p className="text-sm text-gray-600 dark:text-gray-400">Total Meters</p>
+              <p className="text-2xl font-bold text-gray-900 dark:text-white mt-2">{beam.total_beam_meters}m</p>
             </div>
             <Package className="w-10 h-10 text-blue-500" />
           </div>
         </div>
 
-        <div className="bg-white rounded-xl md:rounded-2xl p-4 md:p-6 shadow-soft">
+        <div className="bg-white dark:bg-gray-800 rounded-xl md:rounded-2xl p-4 md:p-6 shadow-soft">
           <div className="flex items-center justify-between">
             <div>
-              <p className="text-sm text-gray-600">Good Pieces</p>
-              <p className="text-2xl font-bold text-green-600 mt-2">{totals.total_good}</p>
+              <p className="text-sm text-gray-600 dark:text-gray-400">Good Pieces</p>
+              <p className="text-2xl font-bold text-green-600 dark:text-green-400 mt-2">{totals.total_good}</p>
             </div>
             <Package className="w-10 h-10 text-green-500" />
           </div>
         </div>
 
-        <div className="bg-white rounded-xl md:rounded-2xl p-4 md:p-6 shadow-soft">
+        <div className="bg-white dark:bg-gray-800 rounded-xl md:rounded-2xl p-4 md:p-6 shadow-soft">
           <div className="flex items-center justify-between">
             <div>
-              <p className="text-sm text-gray-600">Damaged</p>
-              <p className="text-2xl font-bold text-red-600 mt-2">{totals.total_damaged}</p>
+              <p className="text-sm text-gray-600 dark:text-gray-400">Damaged</p>
+              <p className="text-2xl font-bold text-red-600 dark:text-red-400 mt-2">{totals.total_damaged}</p>
             </div>
             <AlertCircle className="w-10 h-10 text-red-500" />
           </div>
         </div>
 
-        <div className="bg-white rounded-xl md:rounded-2xl p-4 md:p-6 shadow-soft">
+        <div className="bg-white dark:bg-gray-800 rounded-xl md:rounded-2xl p-4 md:p-6 shadow-soft">
           <div className="flex items-center justify-between">
             <div>
-              <p className="text-sm text-gray-600">Total Amount</p>
-              <p className="text-2xl font-bold text-primary-600 mt-2">₹{totals.total_amount.toLocaleString()}</p>
+              <p className="text-sm text-gray-600 dark:text-gray-400">Total Amount</p>
+              <p className="text-2xl font-bold text-primary-600 dark:text-primary-400 mt-2">₹{totals.total_amount.toLocaleString()}</p>
             </div>
             <DollarSign className="w-10 h-10 text-primary-500" />
           </div>
@@ -177,18 +177,18 @@ const BeamDetails = ({ isAdmin }: { isAdmin: boolean }) => {
       </div>
 
       {/* Meter Progress */}
-      <div className="bg-white rounded-xl md:rounded-2xl p-4 md:p-6 shadow-soft">
-        <h3 className="text-lg font-semibold mb-3 md:mb-4">Meter Usage Progress</h3>
+      <div className="bg-white dark:bg-gray-800 rounded-xl md:rounded-2xl p-4 md:p-6 shadow-soft">
+        <h3 className="text-lg font-semibold mb-3 md:mb-4 text-gray-900 dark:text-white">Meter Usage Progress</h3>
         <div className="space-y-3">
           <div className="flex justify-between text-sm">
-            <span className="text-gray-600">
+            <span className="text-gray-600 dark:text-gray-400">
               Used: {totals.total_meters_used.toFixed(0)} meters ({usedPercentage.toFixed(1)}%)
             </span>
-            <span className={`font-semibold ${remainingPercentage < 20 ? 'text-red-600' : 'text-green-600'}`}>
+            <span className={`font-semibold ${remainingPercentage < 20 ? 'text-red-600 dark:text-red-400' : 'text-green-600 dark:text-green-400'}`}>
               Remaining: {totals.remaining_meters.toFixed(0)} meters ({remainingPercentage.toFixed(1)}%)
             </span>
           </div>
-          <div className="w-full bg-gray-200 rounded-full h-6 overflow-hidden">
+          <div className="w-full bg-gray-200 dark:bg-gray-600 rounded-full h-6 overflow-hidden">
             <div
               className={`h-full flex items-center justify-center text-xs font-semibold text-white transition-all ${remainingPercentage < 20 ? 'bg-red-500' : 'bg-primary-500'
                 }`}
@@ -198,26 +198,26 @@ const BeamDetails = ({ isAdmin }: { isAdmin: boolean }) => {
             </div>
           </div>
           <div className="grid grid-cols-3 gap-4 mt-4">
-            <div className="bg-blue-50 rounded-xl p-3">
-              <p className="text-xs text-gray-600">Meter/Piece</p>
-              <p className="text-lg font-bold text-blue-700">{beam.meters_per_piece}m</p>
+            <div className="bg-blue-50 dark:bg-blue-900/30 rounded-xl p-3">
+              <p className="text-xs text-gray-600 dark:text-gray-400">Meter/Piece</p>
+              <p className="text-lg font-bold text-blue-700 dark:text-blue-400">{beam.meters_per_piece}m</p>
             </div>
-            <div className="bg-green-50 rounded-xl p-3">
-              <p className="text-xs text-gray-600">Est. Remaining</p>
-              <p className="text-lg font-bold text-green-700">{totals.estimated_pieces_remaining} pcs</p>
+            <div className="bg-green-50 dark:bg-green-900/30 rounded-xl p-3">
+              <p className="text-xs text-gray-600 dark:text-gray-400">Est. Remaining</p>
+              <p className="text-lg font-bold text-green-700 dark:text-green-400">{totals.estimated_pieces_remaining} pcs</p>
             </div>
-            <div className="bg-purple-50 rounded-xl p-3">
-              <p className="text-xs text-gray-600">Product Type</p>
-              <p className="text-lg font-bold text-purple-700">{beam.fabric_type.toUpperCase()}</p>
+            <div className="bg-purple-50 dark:bg-purple-900/30 rounded-xl p-3">
+              <p className="text-xs text-gray-600 dark:text-gray-400">Product Type</p>
+              <p className="text-lg font-bold text-purple-700 dark:text-purple-400">{beam.fabric_type.toUpperCase()}</p>
             </div>
           </div>
         </div>
       </div>
 
       {/* Deliveries Timeline */}
-      <div className="bg-white rounded-xl md:rounded-2xl p-4 md:p-6 shadow-soft">
+      <div className="bg-white dark:bg-gray-800 rounded-xl md:rounded-2xl p-4 md:p-6 shadow-soft">
         <div className="flex items-center justify-between mb-6">
-          <h3 className="text-lg font-semibold">Delivery History</h3>
+          <h3 className="text-lg font-semibold text-gray-900 dark:text-white">Delivery History</h3>
           {isAdmin && (
             <Link
               to={`/add-delivery?beamId=${beam.id}`}
@@ -229,7 +229,7 @@ const BeamDetails = ({ isAdmin }: { isAdmin: boolean }) => {
         </div>
 
         {deliveries.length === 0 ? (
-          <div className="text-center py-12 text-gray-400">
+          <div className="text-center py-12 text-gray-400 dark:text-gray-500">
             <Package className="w-12 h-12 mx-auto mb-3 opacity-50" />
             <p>No deliveries yet</p>
           </div>
@@ -238,51 +238,51 @@ const BeamDetails = ({ isAdmin }: { isAdmin: boolean }) => {
             {deliveries.map((delivery: any, idx: number) => (
               <div
                 key={delivery.id}
-                className="border border-gray-200 rounded-xl p-3 md:p-4 hover:border-primary-200 hover:shadow-md transition"
+                className="border border-gray-200 dark:border-gray-700 rounded-xl p-3 md:p-4 hover:border-primary-200 dark:hover:border-primary-700 hover:shadow-md transition"
               >
                 <div className="flex items-start justify-between mb-2">
                   <div className="flex items-center space-x-2">
                     <Calendar className="w-4 h-4 text-gray-400" />
-                    <span className="font-semibold text-gray-900">
+                    <span className="font-semibold text-gray-900 dark:text-white">
                       {format(new Date(delivery.delivery_date), 'dd MMM yyyy')}
                     </span>
                   </div>
-                  <span className="px-2 py-1 bg-primary-100 text-primary-700 text-xs rounded-full font-semibold">
+                  <span className="px-2 py-1 bg-primary-100 dark:bg-primary-900 text-primary-700 dark:text-primary-300 text-xs rounded-full font-semibold">
                     Delivery #{deliveries.length - idx}
                   </span>
                 </div>
 
                 <div className="grid grid-cols-2 gap-x-6 gap-y-2 mt-3">
                   <div>
-                    <p className="text-xs text-gray-600">Design</p>
-                    <p className="font-semibold text-gray-900">{delivery.design_name}</p>
+                    <p className="text-xs text-gray-600 dark:text-gray-400">Design</p>
+                    <p className="font-semibold text-gray-900 dark:text-white">{delivery.design_name}</p>
                   </div>
                   <div>
-                    <p className="text-xs text-gray-600">Good Pieces</p>
-                    <p className="font-semibold text-green-600">{delivery.good_pieces}</p>
+                    <p className="text-xs text-gray-600 dark:text-gray-400">Good Pieces</p>
+                    <p className="font-semibold text-green-600 dark:text-green-400">{delivery.good_pieces}</p>
                   </div>
                   <div>
-                    <p className="text-xs text-gray-600">Damaged</p>
-                    <p className="font-semibold text-red-600">{delivery.damaged_pieces}</p>
+                    <p className="text-xs text-gray-600 dark:text-gray-400">Damaged</p>
+                    <p className="font-semibold text-red-600 dark:text-red-400">{delivery.damaged_pieces}</p>
                   </div>
                   <div>
-                    <p className="text-xs text-gray-600">Amount</p>
-                    <p className="font-semibold text-primary-600">₹{delivery.total_amount.toLocaleString()}</p>
+                    <p className="text-xs text-gray-600 dark:text-gray-400">Amount</p>
+                    <p className="font-semibold text-primary-600 dark:text-primary-400">₹{delivery.total_amount.toLocaleString()}</p>
                   </div>
                 </div>
 
                 <div className="mt-3 flex items-center space-x-4 text-sm">
-                  <span className="text-gray-600">
+                  <span className="text-gray-600 dark:text-gray-400">
                     Price: <span className="font-semibold">₹{delivery.price_per_piece}</span>/piece
                   </span>
-                  <span className="text-gray-600">
+                  <span className="text-gray-600 dark:text-gray-400">
                     Meters Used: <span className="font-semibold">{delivery.meters_used.toFixed(1)}m</span>
                   </span>
                 </div>
 
                 {delivery.notes && (
-                  <div className="mt-3 bg-gray-50 rounded-lg p-3">
-                    <p className="text-sm text-gray-700">📝 {delivery.notes}</p>
+                  <div className="mt-3 bg-gray-50 dark:bg-gray-700 rounded-lg p-3">
+                    <p className="text-sm text-gray-700 dark:text-gray-300">📝 {delivery.notes}</p>
                   </div>
                 )}
               </div>
@@ -292,44 +292,44 @@ const BeamDetails = ({ isAdmin }: { isAdmin: boolean }) => {
       </div>
 
       {/* Beam Details Card */}
-      <div className="bg-white rounded-xl md:rounded-2xl p-4 md:p-6 shadow-soft">
-        <h3 className="text-lg font-semibold mb-4">Beam Information</h3>
+      <div className="bg-white dark:bg-gray-800 rounded-xl md:rounded-2xl p-4 md:p-6 shadow-soft">
+        <h3 className="text-lg font-semibold mb-4 text-gray-900 dark:text-white">Beam Information</h3>
         <div className="grid grid-cols-2 gap-x-6 gap-y-3">
           <div>
-            <p className="text-xs text-gray-600">Start Date</p>
-            <p className="font-semibold text-gray-900">
+            <p className="text-xs text-gray-600 dark:text-gray-400">Start Date</p>
+            <p className="font-semibold text-gray-900 dark:text-white">
               {format(new Date(beam.start_date), 'dd MMM yyyy')}
             </p>
           </div>
           <div>
-            <p className="text-xs text-gray-600">Customer</p>
-            <p className="font-semibold text-gray-900">{beam.customer_name}</p>
+            <p className="text-xs text-gray-600 dark:text-gray-400">Customer</p>
+            <p className="font-semibold text-gray-900 dark:text-white">{beam.customer_name}</p>
           </div>
           <div>
-            <p className="text-xs text-gray-600">Workshop</p>
-            <p className="font-semibold text-gray-900">{beam.workshop_name}</p>
+            <p className="text-xs text-gray-600 dark:text-gray-400">Workshop</p>
+            <p className="font-semibold text-gray-900 dark:text-white">{beam.workshop_name}</p>
           </div>
           <div>
-            <p className="text-xs text-gray-600">Machine</p>
-            <p className="font-semibold text-gray-900">Machine {beam.machine_number}</p>
+            <p className="text-xs text-gray-600 dark:text-gray-400">Machine</p>
+            <p className="font-semibold text-gray-900 dark:text-white">Machine {beam.machine_number}</p>
           </div>
           <div>
-            <p className="text-xs text-gray-600">Product Type</p>
-            <p className="font-semibold text-gray-900">{beam.fabric_type.toUpperCase()}</p>
+            <p className="text-xs text-gray-600 dark:text-gray-400">Product Type</p>
+            <p className="font-semibold text-gray-900 dark:text-white">{beam.fabric_type.toUpperCase()}</p>
           </div>
           {beam.end_date && (
             <div>
-              <p className="text-xs text-gray-600">End Date</p>
-              <p className="font-semibold text-gray-900">
+              <p className="text-xs text-gray-600 dark:text-gray-400">End Date</p>
+              <p className="font-semibold text-gray-900 dark:text-white">
                 {format(new Date(beam.end_date), 'dd MMM yyyy')}
               </p>
             </div>
           )}
         </div>
         {beam.notes && (
-          <div className="mt-4 bg-gray-50 rounded-xl p-4">
-            <p className="text-xs text-gray-600 mb-1">Notes</p>
-            <p className="text-gray-900">{beam.notes}</p>
+          <div className="mt-4 bg-gray-50 dark:bg-gray-700 rounded-xl p-4">
+            <p className="text-xs text-gray-600 dark:text-gray-400 mb-1">Notes</p>
+            <p className="text-gray-900 dark:text-white">{beam.notes}</p>
           </div>
         )}
       </div>

@@ -79,18 +79,18 @@ const ProductionTrendChart = ({ filterType, fabricType, startDate, endDate }: Fi
     }
 
     return (
-        <div className="bg-white rounded-xl md:rounded-2xl p-3 md:p-4 shadow-lg hover:shadow-xl transition-shadow h-full">
+        <div className="bg-white dark:bg-gray-800 rounded-xl md:rounded-2xl p-3 md:p-4 shadow-lg hover:shadow-xl transition-shadow h-full">
             {/* Header with Legend */}
             <div className="mb-3 md:mb-4 flex justify-between items-start">
                 <div>
-                    <h3 className="text-base md:text-xl font-bold text-gray-900">Production Trend</h3>
-                    <p className="text-xs md:text-sm text-gray-600 mt-1">Workshop-wise production</p>
+                    <h3 className="text-base md:text-xl font-bold text-gray-900 dark:text-white">Production Trend</h3>
+                    <p className="text-xs md:text-sm text-gray-600 dark:text-gray-400 mt-1">Workshop-wise production</p>
                 </div>
                 <div className="hidden sm:flex flex-col gap-1 text-sm">
                     {[...workshopKeys].sort().map((workshop, index) => (
                         <div key={workshop} className="flex items-center gap-2">
                             <span className="w-3 h-3 rounded-full" style={{ backgroundColor: WORKSHOP_COLORS[workshopKeys.indexOf(workshop) % WORKSHOP_COLORS.length] }}></span>
-                            <span className="text-gray-600">{workshop}</span>
+                            <span className="text-gray-600 dark:text-gray-300">{workshop}</span>
                         </div>
                     ))}
                 </div>

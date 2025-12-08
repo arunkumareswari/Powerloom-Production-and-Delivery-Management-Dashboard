@@ -91,28 +91,28 @@ const ManageMachines = () => {
           <ArrowLeft className="w-5 h-5" />
         </button>
         <div>
-          <h1 className="text-xl md:text-3xl font-bold text-gray-900">Manage Machines</h1>
-          <p className="text-xs text-gray-600 hidden sm:block">Add new machines or manage existing ones</p>
+          <h1 className="text-xl md:text-3xl font-bold text-gray-900 dark:text-white">Manage Machines</h1>
+          <p className="text-xs text-gray-600 dark:text-gray-400 hidden sm:block">Add new machines or manage existing ones</p>
         </div>
       </div>
 
       {success && (
-        <div className="bg-green-50 border border-green-200 rounded-xl p-4 flex items-start space-x-3">
-          <CheckCircle className="w-5 h-5 text-green-600 flex-shrink-0 mt-0.5" />
-          <p className="text-sm text-green-800">{success}</p>
+        <div className="bg-green-50 dark:bg-green-900/30 border border-green-200 dark:border-green-800 rounded-xl p-4 flex items-start space-x-3">
+          <CheckCircle className="w-5 h-5 text-green-600 dark:text-green-400 flex-shrink-0 mt-0.5" />
+          <p className="text-sm text-green-800 dark:text-green-300">{success}</p>
         </div>
       )}
 
       {error && (
-        <div className="bg-red-50 border border-red-200 rounded-xl p-4 flex items-start space-x-3">
-          <AlertCircle className="w-5 h-5 text-red-600 flex-shrink-0 mt-0.5" />
-          <p className="text-sm text-red-800">{error}</p>
+        <div className="bg-red-50 dark:bg-red-900/30 border border-red-200 dark:border-red-800 rounded-xl p-4 flex items-start space-x-3">
+          <AlertCircle className="w-5 h-5 text-red-600 dark:text-red-400 flex-shrink-0 mt-0.5" />
+          <p className="text-sm text-red-800 dark:text-red-300">{error}</p>
         </div>
       )}
 
       {/* Add Machine Form */}
-      <div className="bg-white rounded-2xl p-6 shadow-soft">
-        <h3 className="text-lg font-semibold mb-4 flex items-center space-x-2">
+      <div className="bg-white dark:bg-gray-800 rounded-2xl p-6 shadow-soft">
+        <h3 className="text-lg font-semibold mb-4 flex items-center space-x-2 text-gray-900 dark:text-white">
           <Plus className="w-5 h-5" />
           <span>Add New Machine</span>
         </h3>
@@ -120,13 +120,13 @@ const ManageMachines = () => {
         <form onSubmit={handleSubmit} className="space-y-6">
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
+              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
                 Workshop <span className="text-red-500">*</span>
               </label>
               <select
                 value={formData.workshop_id}
                 onChange={(e) => setFormData({ ...formData, workshop_id: e.target.value })}
-                className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-primary-500 focus:border-transparent outline-none"
+                className="w-full px-4 py-3 border border-gray-300 dark:border-gray-600 rounded-xl bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-primary-500 focus:border-transparent outline-none"
                 required
               >
                 <option value="">Select Workshop</option>

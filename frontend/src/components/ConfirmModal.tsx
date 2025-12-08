@@ -38,13 +38,13 @@ const ConfirmModal = ({
             />
 
             {/* Modal */}
-            <div className="relative bg-white rounded-xl shadow-2xl max-w-sm w-full mx-4 animate-slideUp">
+            <div className="relative bg-white dark:bg-gray-800 rounded-xl shadow-2xl max-w-sm w-full mx-4 animate-slideUp">
                 {/* Header */}
-                <div className="flex items-center justify-between px-4 py-3 border-b border-gray-200">
-                    <h3 className="text-lg font-bold text-gray-900">{title}</h3>
+                <div className="flex items-center justify-between px-4 py-3 border-b border-gray-200 dark:border-gray-700">
+                    <h3 className="text-lg font-bold text-gray-900 dark:text-white">{title}</h3>
                     <button
                         onClick={onClose}
-                        className="p-1 text-gray-400 hover:text-gray-600 hover:bg-gray-100 rounded-lg transition flex-shrink-0"
+                        className="p-1 text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg transition flex-shrink-0"
                     >
                         <X className="w-4 h-4" />
                     </button>
@@ -52,14 +52,14 @@ const ConfirmModal = ({
 
                 {/* Content */}
                 <div className="p-4">
-                    <p className="text-sm text-gray-600 leading-relaxed">{message}</p>
+                    <p className="text-sm text-gray-600 dark:text-gray-300 leading-relaxed">{message}</p>
                 </div>
 
                 {/* Actions */}
                 <div className="flex items-center justify-end space-x-2 px-4 pb-4">
                     <button
                         onClick={onClose}
-                        className="px-4 py-2 text-sm text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 transition font-medium"
+                        className="px-4 py-2 text-sm text-gray-700 dark:text-gray-300 bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-600 transition font-medium"
                     >
                         {cancelText}
                     </button>

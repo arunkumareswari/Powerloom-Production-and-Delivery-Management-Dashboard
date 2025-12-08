@@ -69,8 +69,8 @@ const Dashboard = () => {
       {/* Header with Filter */}
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
         <div>
-          <h1 className="text-2xl md:text-3xl font-bold text-gray-900">Dashboard</h1>
-          <p className="text-sm text-gray-600 mt-1">Overview of production data</p>
+          <h1 className="text-2xl md:text-3xl font-bold text-gray-900 dark:text-white">Dashboard</h1>
+          <p className="text-sm text-gray-600 dark:text-gray-400 mt-1">Overview of production data</p>
         </div>
 
         {/* Filters */}
@@ -79,7 +79,7 @@ const Dashboard = () => {
           <select
             value={filterType}
             onChange={(e) => setFilterType(e.target.value as any)}
-            className="px-3 py-2 text-sm border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-primary-500"
+            className="px-3 py-2 text-sm border border-gray-300 dark:border-gray-600 rounded-xl bg-white dark:bg-gray-800 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-primary-500"
           >
             <option value="month">This Month</option>
             <option value="all">All Time</option>
@@ -92,14 +92,14 @@ const Dashboard = () => {
                 type="date"
                 value={startDate}
                 onChange={(e) => setStartDate(e.target.value)}
-                className="px-3 py-2 text-sm border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-primary-500"
+                className="px-3 py-2 text-sm border border-gray-300 dark:border-gray-600 rounded-xl bg-white dark:bg-gray-800 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-primary-500"
                 placeholder="Start Date"
               />
               <input
                 type="date"
                 value={endDate}
                 onChange={(e) => setEndDate(e.target.value)}
-                className="px-3 py-2 text-sm border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-primary-500"
+                className="px-3 py-2 text-sm border border-gray-300 dark:border-gray-600 rounded-xl bg-white dark:bg-gray-800 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-primary-500"
                 placeholder="End Date"
               />
             </>
@@ -109,7 +109,7 @@ const Dashboard = () => {
           <select
             value={fabricType}
             onChange={(e) => setFabricType(e.target.value)}
-            className="px-3 py-2 text-sm border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-primary-500"
+            className="px-3 py-2 text-sm border border-gray-300 dark:border-gray-600 rounded-xl bg-white dark:bg-gray-800 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-primary-500"
           >
             <option value="all"> All Product</option>
             <option value="vesti">Veshti</option>
@@ -120,50 +120,50 @@ const Dashboard = () => {
 
       {/* Stats Cards */}
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 md:gap-6">
-        <div className="bg-white rounded-xl md:rounded-2xl p-4 md:p-6 shadow-soft">
+        <div className="bg-white dark:bg-gray-800 rounded-xl md:rounded-2xl p-4 md:p-6 shadow-soft">
           <div className="flex items-center justify-between">
             <div>
-              <p className="text-xs md:text-sm text-gray-600">Active Beams</p>
-              <p className="text-xl md:text-3xl font-bold text-gray-900 mt-1 md:mt-2">{data.active_beams}</p>
+              <p className="text-xs md:text-sm text-gray-600 dark:text-gray-400">Active Beams</p>
+              <p className="text-xl md:text-3xl font-bold text-gray-900 dark:text-white mt-1 md:mt-2">{data.active_beams}</p>
             </div>
-            <div className="w-10 h-10 md:w-12 md:h-12 bg-blue-100 rounded-xl flex items-center justify-center">
-              <Package className="w-5 h-5 md:w-6 md:h-6 text-blue-600" />
+            <div className="w-10 h-10 md:w-12 md:h-12 bg-blue-100 dark:bg-blue-900 rounded-xl flex items-center justify-center">
+              <Package className="w-5 h-5 md:w-6 md:h-6 text-blue-600 dark:text-blue-400" />
             </div>
           </div>
         </div>
 
-        <div className="bg-white rounded-xl md:rounded-2xl p-4 md:p-6 shadow-soft">
+        <div className="bg-white dark:bg-gray-800 rounded-xl md:rounded-2xl p-4 md:p-6 shadow-soft">
           <div className="flex items-center justify-between">
             <div>
-              <p className="text-xs md:text-sm text-gray-600">Good Pieces</p>
-              <p className="text-xl md:text-3xl font-bold text-green-600 mt-1 md:mt-2">{data.total_pieces_this_month}</p>
+              <p className="text-xs md:text-sm text-gray-600 dark:text-gray-400">Good Pieces</p>
+              <p className="text-xl md:text-3xl font-bold text-green-600 dark:text-green-400 mt-1 md:mt-2">{data.total_pieces_this_month}</p>
             </div>
-            <div className="w-10 h-10 md:w-12 md:h-12 bg-green-100 rounded-xl flex items-center justify-center">
-              <TrendingUp className="w-5 h-5 md:w-6 md:h-6 text-green-600" />
+            <div className="w-10 h-10 md:w-12 md:h-12 bg-green-100 dark:bg-green-900 rounded-xl flex items-center justify-center">
+              <TrendingUp className="w-5 h-5 md:w-6 md:h-6 text-green-600 dark:text-green-400" />
             </div>
           </div>
         </div>
 
-        <div className="bg-white rounded-xl md:rounded-2xl p-4 md:p-6 shadow-soft">
+        <div className="bg-white dark:bg-gray-800 rounded-xl md:rounded-2xl p-4 md:p-6 shadow-soft">
           <div className="flex items-center justify-between">
             <div>
-              <p className="text-xs md:text-sm text-gray-600">Damaged</p>
-              <p className="text-xl md:text-3xl font-bold text-red-600 mt-1 md:mt-2">{data.total_damaged_this_month}</p>
+              <p className="text-xs md:text-sm text-gray-600 dark:text-gray-400">Damaged</p>
+              <p className="text-xl md:text-3xl font-bold text-red-600 dark:text-red-400 mt-1 md:mt-2">{data.total_damaged_this_month}</p>
             </div>
-            <div className="w-10 h-10 md:w-12 md:h-12 bg-red-100 rounded-xl flex items-center justify-center">
-              <AlertCircle className="w-5 h-5 md:w-6 md:h-6 text-red-600" />
+            <div className="w-10 h-10 md:w-12 md:h-12 bg-red-100 dark:bg-red-900 rounded-xl flex items-center justify-center">
+              <AlertCircle className="w-5 h-5 md:w-6 md:h-6 text-red-600 dark:text-red-400" />
             </div>
           </div>
         </div>
 
-        <div className="bg-white rounded-xl md:rounded-2xl p-4 md:p-6 shadow-soft">
+        <div className="bg-white dark:bg-gray-800 rounded-xl md:rounded-2xl p-4 md:p-6 shadow-soft">
           <div className="flex items-center justify-between">
             <div>
-              <p className="text-xs md:text-sm text-gray-600">Total Amount</p>
-              <p className="text-xl md:text-3xl font-bold text-primary-600 mt-1 md:mt-2">₹{(data.pending_amount_this_month || 0).toLocaleString()}</p>
+              <p className="text-xs md:text-sm text-gray-600 dark:text-gray-400">Total Amount</p>
+              <p className="text-xl md:text-3xl font-bold text-primary-600 dark:text-primary-400 mt-1 md:mt-2">₹{(data.pending_amount_this_month || 0).toLocaleString()}</p>
             </div>
-            <div className="w-10 h-10 md:w-12 md:h-12 bg-primary-100 rounded-xl flex items-center justify-center">
-              <DollarSign className="w-5 h-5 md:w-6 md:h-6 text-primary-600" />
+            <div className="w-10 h-10 md:w-12 md:h-12 bg-primary-100 dark:bg-primary-900 rounded-xl flex items-center justify-center">
+              <DollarSign className="w-5 h-5 md:w-6 md:h-6 text-primary-600 dark:text-primary-400" />
             </div>
           </div>
         </div>

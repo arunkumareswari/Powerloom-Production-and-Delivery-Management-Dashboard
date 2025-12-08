@@ -1,5 +1,4 @@
 import { useState } from 'react';
-import { Link } from 'react-router-dom';
 import { authAPI } from '../services/api';
 import { Lock, CheckCircle, AlertCircle } from 'lucide-react';
 
@@ -46,72 +45,72 @@ const Settings = () => {
     <div className="max-w-4xl mx-auto space-y-6">
       {/* Header */}
       <div>
-        <h1 className="text-xl md:text-3xl font-bold text-gray-900">Settings</h1>
-        <p className="text-xs text-gray-600 hidden sm:block">Manage your admin account settings</p>
+        <h1 className="text-xl md:text-3xl font-bold text-gray-900 dark:text-white">Settings</h1>
+        <p className="text-xs text-gray-600 dark:text-gray-400 hidden sm:block">Manage your admin account settings</p>
       </div>
 
       {/* Password Reset Section */}
-      <div className="bg-white rounded-2xl p-6 shadow-soft">
+      <div className="bg-white dark:bg-gray-800 rounded-2xl p-6 shadow-soft">
         <div className="flex items-center space-x-3 mb-6">
-          <div className="w-12 h-12 bg-primary-100 rounded-xl flex items-center justify-center">
-            <Lock className="w-6 h-6 text-primary-600" />
+          <div className="w-12 h-12 bg-primary-100 dark:bg-primary-900 rounded-xl flex items-center justify-center">
+            <Lock className="w-6 h-6 text-primary-600 dark:text-primary-400" />
           </div>
           <div>
-            <h3 className="text-lg font-semibold text-gray-900">Reset Password</h3>
-            <p className="text-sm text-gray-600">Change your admin account password</p>
+            <h3 className="text-lg font-semibold text-gray-900 dark:text-white">Reset Password</h3>
+            <p className="text-sm text-gray-600 dark:text-gray-400">Change your admin account password</p>
           </div>
         </div>
 
         {success && (
-          <div className="bg-green-50 border border-green-200 rounded-xl p-4 mb-6 flex items-start space-x-3">
-            <CheckCircle className="w-5 h-5 text-green-600 flex-shrink-0 mt-0.5" />
-            <p className="text-sm text-green-800">{success}</p>
+          <div className="bg-green-50 dark:bg-green-900/30 border border-green-200 dark:border-green-800 rounded-xl p-4 mb-6 flex items-start space-x-3">
+            <CheckCircle className="w-5 h-5 text-green-600 dark:text-green-400 flex-shrink-0 mt-0.5" />
+            <p className="text-sm text-green-800 dark:text-green-300">{success}</p>
           </div>
         )}
 
         {error && (
-          <div className="bg-red-50 border border-red-200 rounded-xl p-4 mb-6 flex items-start space-x-3">
-            <AlertCircle className="w-5 h-5 text-red-600 flex-shrink-0 mt-0.5" />
-            <p className="text-sm text-red-800">{error}</p>
+          <div className="bg-red-50 dark:bg-red-900/30 border border-red-200 dark:border-red-800 rounded-xl p-4 mb-6 flex items-start space-x-3">
+            <AlertCircle className="w-5 h-5 text-red-600 dark:text-red-400 flex-shrink-0 mt-0.5" />
+            <p className="text-sm text-red-800 dark:text-red-300">{error}</p>
           </div>
         )}
 
         <form onSubmit={handlePasswordReset} className="space-y-6">
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">Username</label>
+            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Username</label>
             <input
               type="text"
               value={passwordData.username}
               onChange={(e) => setPasswordData({ ...passwordData, username: e.target.value })}
-              className="w-full px-4 py-3 border border-gray-300 rounded-xl bg-gray-50 focus:ring-2 focus:ring-primary-500 focus:border-transparent outline-none"
+              className="w-full px-4 py-3 border border-gray-300 dark:border-gray-600 rounded-xl bg-gray-50 dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-primary-500 focus:border-transparent outline-none"
               required
             />
           </div>
 
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">
+            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
               New Password <span className="text-red-500">*</span>
             </label>
             <input
               type="password"
               value={passwordData.new_password}
               onChange={(e) => setPasswordData({ ...passwordData, new_password: e.target.value })}
-              className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-primary-500 focus:border-transparent outline-none"
+              className="w-full px-4 py-3 border border-gray-300 dark:border-gray-600 rounded-xl bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-primary-500 focus:border-transparent outline-none"
               placeholder="Enter new password"
               required
             />
-            <p className="text-xs text-gray-500 mt-1">Minimum 6 characters</p>
+            <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">Minimum 6 characters</p>
           </div>
 
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">
+            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
               Confirm Password <span className="text-red-500">*</span>
             </label>
             <input
               type="password"
               value={passwordData.confirm_password}
               onChange={(e) => setPasswordData({ ...passwordData, confirm_password: e.target.value })}
-              className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-primary-500 focus:border-transparent outline-none"
+              className="w-full px-4 py-3 border border-gray-300 dark:border-gray-600 rounded-xl bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-primary-500 focus:border-transparent outline-none"
               placeholder="Re-enter new password"
               required
             />
@@ -129,23 +128,23 @@ const Settings = () => {
 
 
       {/* Danger Zone - Reset Database */}
-      <div className="bg-white rounded-2xl p-6 shadow-soft border-2 border-red-200">
+      <div className="bg-white dark:bg-gray-800 rounded-2xl p-6 shadow-soft border-2 border-red-200 dark:border-red-700/50">
         <div className="flex items-center space-x-3 mb-4">
-          <div className="w-12 h-12 bg-red-100 rounded-xl flex items-center justify-center">
-            <AlertCircle className="w-6 h-6 text-red-600" />
+          <div className="w-12 h-12 bg-red-100 dark:bg-red-900/40 rounded-xl flex items-center justify-center">
+            <AlertCircle className="w-6 h-6 text-red-600 dark:text-red-400" />
           </div>
           <div>
-            <h3 className="text-lg font-semibold text-gray-900">Danger Zone</h3>
-            <p className="text-sm text-gray-600">Irreversible actions</p>
+            <h3 className="text-lg font-semibold text-gray-900 dark:text-white">Danger Zone</h3>
+            <p className="text-sm text-gray-600 dark:text-gray-400">Irreversible actions</p>
           </div>
         </div>
 
-        <div className="bg-red-50 border border-red-200 rounded-xl p-4 mb-4">
-          <p className="text-sm text-red-800 font-semibold mb-2">⚠️ Warning: This action cannot be undone!</p>
-          <p className="text-sm text-red-700">
+        <div className="bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-700/40 rounded-xl p-4 mb-4">
+          <p className="text-sm text-red-800 dark:text-orange-300 font-semibold mb-2">⚠️ Warning: This action cannot be undone!</p>
+          <p className="text-sm text-red-700 dark:text-red-300">
             Resetting the database will permanently delete ALL data including:
           </p>
-          <ul className="text-sm text-red-700 mt-2 ml-4 list-disc space-y-1">
+          <ul className="text-sm text-red-700 dark:text-red-300 mt-2 ml-4 list-disc space-y-1">
             <li>All beams and deliveries</li>
             <li>All workshops, customers, and machines</li>
             <li>All design presets and production history</li>
@@ -158,7 +157,7 @@ const Settings = () => {
             const modal = document.getElementById('reset-modal');
             if (modal) modal.classList.remove('hidden');
           }}
-          className="w-full px-6 py-3 bg-red-600 text-white rounded-xl hover:bg-red-700 transition font-semibold"
+          className="w-full px-6 py-3 bg-red-600 dark:bg-red-700 text-white rounded-xl hover:bg-red-700 dark:hover:bg-red-600 transition font-semibold"
         >
           Reset Database
         </button>
