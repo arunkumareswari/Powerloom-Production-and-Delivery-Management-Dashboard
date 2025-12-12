@@ -43,7 +43,18 @@ security = HTTPBearer()
 # ========================================
 
 MONGODB_URI = os.getenv("MONGODB_URI")
-client = MongoClient(MONGODB_URI)
+if not MONGODB_URI:
+    print("WARNING: MONGODB_URI not set!")
+    MONGODB_URI = "mongodb://localhost:27017/"
+
+# Add timeout and retry settings for cloud MongoDB
+client = MongoClient(
+    MONGODB_URI,
+    serverSelectionTimeoutMS=5000,  # 5 second timeout
+    connectTimeoutMS=10000,
+    socketTimeoutMS=10000,
+    retryWrites=True
+)
 db = client.powerloom_db
 
 # Collections
