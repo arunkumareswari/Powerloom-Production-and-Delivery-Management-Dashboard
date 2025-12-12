@@ -120,17 +120,17 @@ const WorkshopProductionChart = ({ filterType, fabricType, startDate, endDate }:
     return (
         <div className="bg-white dark:bg-gray-800 rounded-xl md:rounded-2xl p-3 md:p-4 shadow-lg hover:shadow-xl transition-shadow h-full">
             {/* Header with Legend */}
-            <div className="mb-3 md:mb-4 flex justify-between items-start">
-                <div>
+            <div className="mb-3 md:mb-4 flex flex-col md:flex-row md:justify-between md:items-start gap-2">
+                <div className="flex-shrink-0">
                     <h3 className="text-base md:text-xl font-bold text-gray-900 dark:text-white">Workshop Production</h3>
                     <p className="text-xs md:text-sm text-gray-600 dark:text-gray-400 mt-1">Active beam machines only</p>
                 </div>
-                {/* Machine color legend */}
-                <div className="hidden sm:grid grid-cols-2 lg:grid-cols-4 gap-x-4 gap-y-1 text-sm">
+                {/* Machine color legend - hidden on mobile */}
+                <div className="hidden sm:flex flex-wrap gap-x-3 gap-y-1 text-xs md:text-sm">
                     {allMachines.map((machine) => (
-                        <div key={machine} className="flex items-center gap-2">
-                            <span className="w-3 h-3 rounded-full" style={{ backgroundColor: getMachineColor(machine) }}></span>
-                            <span className="text-gray-600 dark:text-gray-300">Machine {machine}</span>
+                        <div key={machine} className="flex items-center gap-1.5 whitespace-nowrap">
+                            <span className="w-2.5 h-2.5 rounded-full flex-shrink-0" style={{ backgroundColor: getMachineColor(machine) }}></span>
+                            <span className="text-gray-600 dark:text-gray-300">M{machine}</span>
                         </div>
                     ))}
                 </div>
