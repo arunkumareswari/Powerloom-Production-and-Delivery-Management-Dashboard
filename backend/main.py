@@ -448,21 +448,23 @@ async def get_machine_quality(fabric_type: str = None):
 
 @app.get("/api/analytics/workshop-machine-production")
 async def get_workshop_machine_production(fabric_type: str = None):
-    """Get machine-wise production data for each workshop"""
+    """Get machine-wise production data for each workshop - only machines with active beams"""
     try:
-        match_filter = {}
+        # Start from beams collection and filter for active beams only
+        beam_match = {"status": "active"}
         if fabric_type:
-            match_filter["fabric_type"] = fabric_type
+            beam_match["fabric_type"] = fabric_type
         
         pipeline = [
-            {"$match": match_filter} if match_filter else {"$match": {}},
-            {"$lookup": {"from": "workshops", "localField": "workshop_id", "foreignField": "_id", "as": "workshop"}},
+            {"$match": beam_match},
+            {"$lookup": {"from": "machines", "localField": "machine_id", "foreignField": "_id", "as": "machine"}},
+            {"$unwind": "$machine"},
+            {"$lookup": {"from": "workshops", "localField": "machine.workshop_id", "foreignField": "_id", "as": "workshop"}},
             {"$unwind": "$workshop"},
-            {"$lookup": {"from": "beams", "localField": "_id", "foreignField": "machine_id", "as": "beams"}},
-            {"$lookup": {"from": "deliveries", "localField": "beams._id", "foreignField": "beam_id", "as": "deliveries"}},
+            {"$lookup": {"from": "deliveries", "localField": "_id", "foreignField": "beam_id", "as": "deliveries"}},
             {"$project": {
                 "workshop_name": "$workshop.name",
-                "machine_number": 1,
+                "machine_number": "$machine.machine_number",
                 "total_production": {"$sum": {"$map": {
                     "input": "$deliveries",
                     "as": "d",
@@ -473,10 +475,11 @@ async def get_workshop_machine_production(fabric_type: str = None):
                 "_id": "$workshop_name",
                 "machines": {"$push": {"machine_number": "$machine_number", "production": "$total_production"}}
             }},
-            {"$project": {"workshop_name": "$_id", "machines": 1, "_id": 0}}
+            {"$project": {"workshop_name": "$_id", "machines": 1, "_id": 0}},
+            {"$sort": {"workshop_name": 1}}
         ]
         
-        results = list(machines_col.aggregate(pipeline))
+        results = list(beams_col.aggregate(pipeline))
         return {"data": results}
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))

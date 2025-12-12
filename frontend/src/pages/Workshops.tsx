@@ -4,6 +4,7 @@ import { Factory, AlertTriangle, Archive, ArrowUp, ArrowDown, Trash2 } from 'luc
 import { Link, useNavigate, useSearchParams } from 'react-router-dom';
 import api from '../services/api';
 import ConfirmModal from '../components/ConfirmModal';
+import { formatDisplayDate } from '../utils/dateUtils';
 
 const Workshops = ({ isAdmin }: { isAdmin: boolean }) => {
   const navigate = useNavigate();
@@ -480,10 +481,10 @@ const Workshops = ({ isAdmin }: { isAdmin: boolean }) => {
                           <span className="text-gray-700 dark:text-gray-300 font-medium">{beam.total_beam_meters}m</span>
                         </td>
                         <td className="py-4 px-6">
-                          <span className="text-gray-700 dark:text-gray-300">{beam.start_date}</span>
+                          <span className="text-gray-700 dark:text-gray-300">{formatDisplayDate(beam.start_date)}</span>
                         </td>
                         <td className="py-4 px-6">
-                          <span className="text-gray-700 dark:text-gray-300">{beam.end_date || '-'}</span>
+                          <span className="text-gray-700 dark:text-gray-300">{formatDisplayDate(beam.end_date)}</span>
                         </td>
                         <td className="py-4 px-6">
                           <span className={`px-3 py-1 text-sm rounded-full font-semibold ${beam.fabric_type === 'veshti'

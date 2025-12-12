@@ -136,6 +136,13 @@ const ProductionTrendChart = ({ filterType, fabricType, startDate, endDate }: Fi
                             boxShadow: '0 10px 15px -3px rgba(0, 0, 0, 0.1)',
                             padding: '12px 16px'
                         }}
+                        labelFormatter={(value) => {
+                            const date = new Date(value);
+                            const day = String(date.getDate()).padStart(2, '0');
+                            const month = String(date.getMonth() + 1).padStart(2, '0');
+                            const year = date.getFullYear();
+                            return `${day}-${month}-${year}`;
+                        }}
                         labelStyle={{ fontWeight: 600, marginBottom: '8px', color: '#111827' }}
                         itemStyle={{ padding: '4px 0' }}
                     />

@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from 'recharts';
+import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, Cell } from 'recharts';
 import api from '../../services/api';
 
 interface MachineProduction {
@@ -7,10 +7,9 @@ interface MachineProduction {
     production: number;
 }
 
-interface WorkshopMachineData {
+interface WorkshopData {
     workshop_name: string;
     machines: MachineProduction[];
-    [key: string]: any; // For dynamic machine keys
 }
 
 interface FilterProps {
@@ -20,6 +19,7 @@ interface FilterProps {
     endDate: string;
 }
 
+// Colors for machines
 const MACHINE_COLORS = [
     '#3b82f6', // Blue
     '#10b981', // Green
@@ -27,12 +27,20 @@ const MACHINE_COLORS = [
     '#f59e0b', // Amber
     '#ef4444', // Red
     '#06b6d4', // Cyan
+    '#ec4899', // Pink
+    '#84cc16', // Lime
 ];
 
+const getMachineColor = (machineNumber: string | number) => {
+    const num = parseInt(String(machineNumber).replace(/\D/g, '')) || 0;
+    return MACHINE_COLORS[(num - 1) % MACHINE_COLORS.length];
+};
+
 const WorkshopProductionChart = ({ filterType, fabricType, startDate, endDate }: FilterProps) => {
-    const [data, setData] = useState<WorkshopMachineData[]>([]);
-    const [machineKeys, setMachineKeys] = useState<string[]>([]);
+    const [workshops, setWorkshops] = useState<WorkshopData[]>([]);
+    const [allMachines, setAllMachines] = useState<string[]>([]);
     const [loading, setLoading] = useState(true);
+    const [maxProduction, setMaxProduction] = useState(0);
 
     useEffect(() => {
         fetchData();
@@ -42,7 +50,6 @@ const WorkshopProductionChart = ({ filterType, fabricType, startDate, endDate }:
         try {
             setLoading(true);
 
-            // Build query params
             let params = new URLSearchParams();
             if (fabricType !== 'all') {
                 params.append('fabric_type', fabricType);
@@ -50,30 +57,48 @@ const WorkshopProductionChart = ({ filterType, fabricType, startDate, endDate }:
 
             const response = await api.get(`/analytics/workshop-machine-production?${params.toString()}`);
 
-            console.log('Workshop Machine Data:', response.data);
-
-            // Transform data for Recharts
-            const transformedData: WorkshopMachineData[] = [];
-            const allMachineKeys = new Set<string>();
-
-            response.data.data.forEach((workshop: any) => {
-                const workshopData: WorkshopMachineData = {
-                    workshop_name: workshop.workshop_name,
-                    machines: workshop.machines
-                };
-
-                // Add each machine as a separate key for grouped bars
-                workshop.machines.forEach((machine: MachineProduction) => {
-                    const machineKey = `machine_${machine.machine_number}`;
-                    workshopData[machineKey] = machine.production;
-                    allMachineKeys.add(machineKey);
-                });
-
-                transformedData.push(workshopData);
+            // Sort workshops naturally (Workshop 1, 2, 3...)
+            const sortedWorkshops = [...response.data.data].sort((a: any, b: any) => {
+                const numA = parseInt(a.workshop_name.replace(/\D/g, '')) || 0;
+                const numB = parseInt(b.workshop_name.replace(/\D/g, '')) || 0;
+                return numA - numB;
             });
 
-            setMachineKeys(Array.from(allMachineKeys).sort());
-            setData(transformedData);
+            // Process each workshop
+            const processedWorkshops: WorkshopData[] = [];
+            const machineSet = new Set<string>();
+            let maxProd = 0;
+
+            sortedWorkshops.forEach((workshop: any) => {
+                // Sort machines within workshop
+                const sortedMachines = [...workshop.machines].sort((a: any, b: any) => {
+                    const numA = parseInt(String(a.machine_number).replace(/\D/g, '')) || 0;
+                    const numB = parseInt(String(b.machine_number).replace(/\D/g, '')) || 0;
+                    return numA - numB;
+                });
+
+                sortedMachines.forEach((m: any) => {
+                    machineSet.add(String(m.machine_number));
+                    if (m.production > maxProd) maxProd = m.production;
+                });
+
+                processedWorkshops.push({
+                    workshop_name: workshop.workshop_name,
+                    machines: sortedMachines.map((m: any) => ({
+                        machine_number: String(m.machine_number),
+                        production: m.production
+                    }))
+                });
+            });
+
+            // Sort machine numbers for legend
+            const sortedMachines = Array.from(machineSet).sort((a, b) => {
+                return (parseInt(a) || 0) - (parseInt(b) || 0);
+            });
+
+            setMaxProduction(maxProd);
+            setAllMachines(sortedMachines);
+            setWorkshops(processedWorkshops);
         } catch (error) {
             console.error('Failed to fetch workshop machine data:', error);
         } finally {
@@ -94,76 +119,82 @@ const WorkshopProductionChart = ({ filterType, fabricType, startDate, endDate }:
 
     return (
         <div className="bg-white dark:bg-gray-800 rounded-xl md:rounded-2xl p-3 md:p-4 shadow-lg hover:shadow-xl transition-shadow h-full">
+            {/* Header with Legend */}
             <div className="mb-3 md:mb-4 flex justify-between items-start">
                 <div>
                     <h3 className="text-base md:text-xl font-bold text-gray-900 dark:text-white">Workshop Production</h3>
-                    <p className="text-xs md:text-sm text-gray-600 dark:text-gray-400 mt-1">Machine-wise production</p>
+                    <p className="text-xs md:text-sm text-gray-600 dark:text-gray-400 mt-1">Active beam machines only</p>
                 </div>
-                <div className="hidden sm:grid grid-cols-2 gap-x-4 gap-y-1 text-sm">
-                    {machineKeys.map((machineKey, index) => (
-                        <div key={machineKey} className="flex items-center gap-2">
-                            <span className="w-3 h-3 rounded-full" style={{ backgroundColor: MACHINE_COLORS[index % MACHINE_COLORS.length] }}></span>
-                            <span className="text-gray-600 dark:text-gray-300">Machine {machineKey.replace('machine_', '')}</span>
+                {/* Machine color legend */}
+                <div className="hidden sm:grid grid-cols-2 lg:grid-cols-4 gap-x-4 gap-y-1 text-sm">
+                    {allMachines.map((machine) => (
+                        <div key={machine} className="flex items-center gap-2">
+                            <span className="w-3 h-3 rounded-full" style={{ backgroundColor: getMachineColor(machine) }}></span>
+                            <span className="text-gray-600 dark:text-gray-300">Machine {machine}</span>
                         </div>
                     ))}
                 </div>
             </div>
 
-            <ResponsiveContainer width="100%" height={250}>
-                <BarChart data={data} margin={{ top: 20, right: 10, left: -10, bottom: 5 }} barGap={4}>
-                    <CartesianGrid strokeDasharray="3 3" stroke="#e5e7eb" vertical={false} />
-                    <XAxis
-                        dataKey="workshop_name"
-                        stroke="#9ca3af"
-                        tick={{ fontSize: 12, fill: '#6b7280' }}
-                        tickLine={false}
-                        axisLine={{ stroke: '#e5e7eb' }}
-                    />
-                    <YAxis
-                        stroke="#9ca3af"
-                        tick={{ fontSize: 12, fill: '#6b7280' }}
-                        tickLine={false}
-                        axisLine={{ stroke: '#e5e7eb' }}
-                    />
-                    <Tooltip
-                        contentStyle={{
-                            backgroundColor: 'rgba(255, 255, 255, 0.98)',
-                            border: 'none',
-                            borderRadius: '12px',
-                            boxShadow: '0 10px 15px -3px rgba(0, 0, 0, 0.1)',
-                            padding: '12px 16px'
-                        }}
-                        cursor={{ fill: 'rgba(59, 130, 246, 0.1)' }}
-                        content={({ payload }) => {
-                            if (!payload || payload.length === 0) return null;
-                            const total = payload.reduce((sum: number, p: any) => sum + (p.value || 0), 0);
-                            return (
-                                <div style={{ backgroundColor: 'white', padding: '12px 16px', borderRadius: '12px', boxShadow: '0 10px 15px -3px rgba(0, 0, 0, 0.1)' }}>
-                                    <p style={{ fontWeight: 'bold', color: '#374151', fontSize: '14px', marginBottom: '8px' }}>
-                                        Total Count: {total}
-                                    </p>
-                                    {payload.map((p: any, idx: number) => (
-                                        <p key={idx} style={{ color: p.color, fontSize: '13px', margin: '4px 0' }}>
-                                            {p.name}: {p.value}
-                                        </p>
-                                    ))}
-                                </div>
-                            );
-                        }}
-                    />
-
-                    {/* Dynamic bars based on actual machines */}
-                    {machineKeys.map((machineKey, index) => (
-                        <Bar
-                            key={machineKey}
-                            dataKey={machineKey}
-                            fill={MACHINE_COLORS[index % MACHINE_COLORS.length]}
-                            radius={[8, 8, 0, 0]}
-                            name={`Machine ${machineKey.replace('machine_', '')}`}
-                        />
+            {workshops.length === 0 ? (
+                <div className="flex items-center justify-center h-[250px] text-gray-500 dark:text-gray-400">
+                    <p>No active beams found</p>
+                </div>
+            ) : (
+                <div className="flex items-end justify-around gap-2" style={{ height: 250 }}>
+                    {workshops.map((workshop) => (
+                        <div key={workshop.workshop_name} className="flex flex-col items-center" style={{ flex: workshop.machines.length }}>
+                            {/* Mini bar chart for this workshop */}
+                            <ResponsiveContainer width="100%" height={200}>
+                                <BarChart
+                                    data={workshop.machines.map(m => ({ ...m, name: `M${m.machine_number}` }))}
+                                    margin={{ top: 10, right: 5, left: 5, bottom: 0 }}
+                                >
+                                    <YAxis
+                                        domain={[0, maxProduction || 'auto']}
+                                        hide
+                                    />
+                                    <Tooltip
+                                        contentStyle={{
+                                            backgroundColor: 'rgba(255, 255, 255, 0.98)',
+                                            border: 'none',
+                                            borderRadius: '12px',
+                                            boxShadow: '0 10px 15px -3px rgba(0, 0, 0, 0.1)',
+                                            padding: '12px 16px'
+                                        }}
+                                        content={({ payload }) => {
+                                            if (!payload || payload.length === 0) return null;
+                                            const item = payload[0]?.payload;
+                                            return (
+                                                <div style={{ backgroundColor: 'white', padding: '12px 16px', borderRadius: '12px', boxShadow: '0 10px 15px -3px rgba(0, 0, 0, 0.1)' }}>
+                                                    <p style={{ fontWeight: 'bold', color: '#374151', fontSize: '14px', marginBottom: '4px' }}>
+                                                        {workshop.workshop_name}
+                                                    </p>
+                                                    <p style={{ color: getMachineColor(item.machine_number), fontSize: '13px', marginBottom: '4px' }}>
+                                                        Machine {item.machine_number}
+                                                    </p>
+                                                    <p style={{ color: '#374151', fontSize: '14px', fontWeight: 600 }}>
+                                                        Production: {item.production}
+                                                    </p>
+                                                </div>
+                                            );
+                                        }}
+                                    />
+                                    <Bar dataKey="production" radius={[4, 4, 0, 0]}>
+                                        {workshop.machines.map((machine, index) => (
+                                            <Cell key={index} fill={getMachineColor(machine.machine_number)} />
+                                        ))}
+                                    </Bar>
+                                </BarChart>
+                            </ResponsiveContainer>
+                            {/* Workshop label */}
+                            <p className="text-xs md:text-sm text-gray-600 dark:text-gray-400 mt-1 text-center">
+                                {workshop.workshop_name}
+                            </p>
+                        </div>
                     ))}
-                </BarChart>
-            </ResponsiveContainer>
+                </div>
+            )}
         </div>
     );
 };

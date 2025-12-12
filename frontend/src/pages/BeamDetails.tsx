@@ -263,7 +263,7 @@ const BeamDetails = ({ isAdmin }: { isAdmin: boolean }) => {
                   <div className="flex items-center space-x-2">
                     <Calendar className="w-4 h-4 text-gray-400" />
                     <span className="font-semibold text-gray-900 dark:text-white">
-                      {format(new Date(delivery.delivery_date), 'dd MMM yyyy')}
+                      {format(new Date(delivery.delivery_date), 'dd-MM-yyyy')}
                     </span>
                   </div>
                   <div className="flex items-center space-x-2">
@@ -310,11 +310,13 @@ const BeamDetails = ({ isAdmin }: { isAdmin: boolean }) => {
                   </span>
                 </div>
 
-                {delivery.notes && (
-                  <div className="mt-3 bg-gray-50 dark:bg-gray-700 rounded-lg p-3">
-                    <p className="text-sm text-gray-700 dark:text-gray-300">📝 {delivery.notes}</p>
-                  </div>
-                )}
+                {
+                  delivery.notes && (
+                    <div className="mt-3 bg-gray-50 dark:bg-gray-700 rounded-lg p-3">
+                      <p className="text-sm text-gray-700 dark:text-gray-300">📝 {delivery.notes}</p>
+                    </div>
+                  )
+                }
               </div>
             ))}
           </div>
@@ -328,7 +330,7 @@ const BeamDetails = ({ isAdmin }: { isAdmin: boolean }) => {
           <div>
             <p className="text-xs text-gray-600 dark:text-gray-400">Start Date</p>
             <p className="font-semibold text-gray-900 dark:text-white">
-              {format(new Date(beam.start_date), 'dd MMM yyyy')}
+              {format(new Date(beam.start_date), 'dd-MM-yyyy')}
             </p>
           </div>
           <div>
@@ -351,7 +353,7 @@ const BeamDetails = ({ isAdmin }: { isAdmin: boolean }) => {
             <div>
               <p className="text-xs text-gray-600 dark:text-gray-400">End Date</p>
               <p className="font-semibold text-gray-900 dark:text-white">
-                {format(new Date(beam.end_date), 'dd MMM yyyy')}
+                {format(new Date(beam.end_date), 'dd-MM-yyyy')}
               </p>
             </div>
           )}
@@ -374,7 +376,7 @@ const BeamDetails = ({ isAdmin }: { isAdmin: boolean }) => {
         confirmText="Delete"
         type="danger"
       />
-    </div>
+    </div >
   );
 };
 

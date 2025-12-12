@@ -3,6 +3,7 @@ import { reportAPI, workshopAPI } from '../services/api';
 import { FileText, Download, Calendar } from 'lucide-react';
 import jsPDF from 'jspdf';
 import autoTable from 'jspdf-autotable';
+import { formatDisplayDate } from '../utils/dateUtils';
 
 const Reports = ({ isAdmin }: { isAdmin: boolean }) => {
   const [loading, setLoading] = useState(false);
@@ -11,6 +12,7 @@ const Reports = ({ isAdmin }: { isAdmin: boolean }) => {
   const [deliveryData, setDeliveryData] = useState<any[]>([]);
   const [workshops, setWorkshops] = useState<any[]>([]);
   const [selectedWorkshop, setSelectedWorkshop] = useState<string>('');
+  const [selectedProductType, setSelectedProductType] = useState<string>('');
 
   // Helper function for local date formatting (fixes timezone issues)
   const formatLocalDate = (date: Date) => {
@@ -58,14 +60,18 @@ const Reports = ({ isAdmin }: { isAdmin: boolean }) => {
     }
   };
 
-  // Filter data by selected workshop
-  const filteredData = selectedWorkshop
-    ? reportData.filter(beam => beam.workshop === selectedWorkshop)
-    : reportData;
+  // Filter data by selected workshop and product type
+  const filteredData = reportData.filter(beam => {
+    if (selectedWorkshop && beam.workshop !== selectedWorkshop) return false;
+    if (selectedProductType && beam.fabric_type !== selectedProductType) return false;
+    return true;
+  });
 
-  const filteredDeliveryData = selectedWorkshop
-    ? deliveryData.filter(d => d.workshop === selectedWorkshop)
-    : deliveryData;
+  const filteredDeliveryData = deliveryData.filter(d => {
+    if (selectedWorkshop && d.workshop !== selectedWorkshop) return false;
+    if (selectedProductType && d.fabric_type !== selectedProductType) return false;
+    return true;
+  });
 
   const exportToCSV = () => {
     if (filteredData.length === 0) return;
@@ -83,8 +89,8 @@ const Reports = ({ isAdmin }: { isAdmin: boolean }) => {
       beam.fabric_type,
       beam.status === 'completed' || beam.end_date ? 'Completed' : 'Running',
       beam.customer,
-      beam.start_date,
-      beam.end_date || 'Active',
+      formatDisplayDate(beam.start_date),
+      beam.end_date ? formatDisplayDate(beam.end_date) : 'Active',
       beam.total_beam_meters,
       beam.total_good,
       beam.total_damaged,
@@ -121,7 +127,7 @@ const Reports = ({ isAdmin }: { isAdmin: boolean }) => {
     // Date range
     doc.setFontSize(11);
     doc.setTextColor(100, 100, 100);
-    doc.text(`Period: ${dateRange.start_date} to ${dateRange.end_date}`, 14, 30);
+    doc.text(`Period: ${formatDisplayDate(dateRange.start_date)} to ${formatDisplayDate(dateRange.end_date)}`, 14, 30);
 
     // Table data
     const tableData = filteredData.map(beam => [
@@ -130,8 +136,8 @@ const Reports = ({ isAdmin }: { isAdmin: boolean }) => {
       beam.beam_number,
       beam.fabric_type.toUpperCase(),
       beam.customer,
-      beam.start_date,
-      beam.end_date || 'Running',
+      formatDisplayDate(beam.start_date),
+      beam.end_date ? formatDisplayDate(beam.end_date) : 'Running',
       `${beam.total_beam_meters}m`,
       beam.total_good.toString(),
       beam.total_damaged.toString(),
@@ -202,7 +208,7 @@ const Reports = ({ isAdmin }: { isAdmin: boolean }) => {
           <Calendar className="w-5 h-5" />
           <span>Select Date Range</span>
         </h3>
-        <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+        <div className="grid grid-cols-1 md:grid-cols-5 gap-4">
           <div>
             <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Workshop</label>
             <select
@@ -214,6 +220,18 @@ const Reports = ({ isAdmin }: { isAdmin: boolean }) => {
               {workshops.map((w) => (
                 <option key={w.id} value={w.name}>{w.name}</option>
               ))}
+            </select>
+          </div>
+          <div>
+            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Product Type</label>
+            <select
+              value={selectedProductType}
+              onChange={(e) => setSelectedProductType(e.target.value)}
+              className="w-full px-4 py-3 border border-gray-300 dark:border-gray-600 rounded-xl bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-primary-500 focus:border-transparent outline-none"
+            >
+              <option value="">All Products</option>
+              <option value="veshti">Veshti</option>
+              <option value="saree">Saree</option>
             </select>
           </div>
           <div>
@@ -422,7 +440,7 @@ const Reports = ({ isAdmin }: { isAdmin: boolean }) => {
                       doc.text(title, 14, 22);
                       doc.setFontSize(11);
                       doc.setTextColor(100, 100, 100);
-                      doc.text(`Period: ${dateRange.start_date} to ${dateRange.end_date}`, 14, 30);
+                      doc.text(`Period: ${formatDisplayDate(dateRange.start_date)} to ${formatDisplayDate(dateRange.end_date)}`, 14, 30);
 
                       // Sort by date (desc) and workshop for grouping
                       const sortedData = [...filteredDeliveryData].sort((a, b) => {
@@ -460,7 +478,7 @@ const Reports = ({ isAdmin }: { isAdmin: boolean }) => {
                         // Add items in group (white background)
                         group.items.forEach(d => {
                           tableBody.push([
-                            { content: date, styles: { fillColor: [255, 255, 255] } },
+                            { content: formatDisplayDate(date), styles: { fillColor: [255, 255, 255] } },
                             { content: d.machine_number || 'N/A', styles: { fillColor: [255, 255, 255] } },
                             { content: workshop, styles: { fillColor: [255, 255, 255] } },
                             { content: d.customer, styles: { fillColor: [255, 255, 255] } },
@@ -474,7 +492,7 @@ const Reports = ({ isAdmin }: { isAdmin: boolean }) => {
 
                         // Add group subtotal row (light blue)
                         tableBody.push([
-                          { content: `${date} - ${workshop} Total`, colSpan: 5, styles: { fontStyle: 'bold', fillColor: [230, 245, 255] } },
+                          { content: `${formatDisplayDate(date)} - ${workshop} Total`, colSpan: 5, styles: { fontStyle: 'bold', fillColor: [230, 245, 255] } },
                           { content: group.totalGood.toString(), styles: { fontStyle: 'bold', fillColor: [230, 245, 255] } },
                           { content: group.totalDamaged.toString(), styles: { fontStyle: 'bold', fillColor: [230, 245, 255] } },
                           { content: `${group.totalMeters}m`, styles: { fontStyle: 'bold', fillColor: [230, 245, 255] } },
@@ -554,7 +572,7 @@ const Reports = ({ isAdmin }: { isAdmin: boolean }) => {
               <tbody>
                 {filteredDeliveryData.map((d, idx) => (
                   <tr key={idx} className="border-b border-gray-100 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-700">
-                    <td className="py-3 px-4 text-gray-700 dark:text-gray-300">{d.delivery_date}</td>
+                    <td className="py-3 px-4 text-gray-700 dark:text-gray-300">{formatDisplayDate(d.delivery_date)}</td>
                     <td className="py-3 px-4 font-semibold text-gray-900 dark:text-white">{d.machine_number || 'N/A'}</td>
                     <td className="py-3 px-4 text-gray-700 dark:text-gray-300">{d.workshop}</td>
                     <td className="py-3 px-4 text-gray-700 dark:text-gray-300">{d.customer}</td>
