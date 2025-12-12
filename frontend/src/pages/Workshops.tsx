@@ -9,7 +9,7 @@ const Workshops = ({ isAdmin }: { isAdmin: boolean }) => {
   const navigate = useNavigate();
   const [searchParams, setSearchParams] = useSearchParams();
   const [workshops, setWorkshops] = useState<any[]>([]);
-  const [selectedWorkshop, setSelectedWorkshop] = useState<number | null>(null);
+  const [selectedWorkshop, setSelectedWorkshop] = useState<string | null>(null);
   const [machines, setMachines] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [showArchive, setShowArchive] = useState(() => searchParams.get('view') === 'archive');
@@ -77,11 +77,11 @@ const Workshops = ({ isAdmin }: { isAdmin: boolean }) => {
     }
   };
 
-  const selectWorkshop = async (workshopId: number) => {
+  const selectWorkshop = async (workshopId: string) => {
     setShowArchive(false);
     setSelectedWorkshop(workshopId);
     try {
-      const response = await workshopAPI.getMachines(workshopId);
+      const response = await workshopAPI.getMachines(workshopId);  // Use string ID
       setMachines(response.data.machines);
     } catch (error) {
       console.error('Error fetching machines:', error);
@@ -143,7 +143,7 @@ const Workshops = ({ isAdmin }: { isAdmin: boolean }) => {
   };
 
   // Handle beam deletion
-  const handleDeleteBeam = async (beamId: number, beamNumber: string) => {
+  const handleDeleteBeam = async (beamId: string, beamNumber: string) => {
     setConfirmModal({
       isOpen: true,
       title: 'Delete Beam',
@@ -218,7 +218,7 @@ const Workshops = ({ isAdmin }: { isAdmin: boolean }) => {
           <div className="md:hidden mb-4">
             <select
               value={selectedWorkshop || ''}
-              onChange={(e) => selectWorkshop(Number(e.target.value))}
+              onChange={(e) => selectWorkshop(e.target.value)}  // Keep as string
               className="w-full px-4 py-3 border border-gray-300 dark:border-gray-600 rounded-xl bg-white dark:bg-gray-800 text-gray-900 dark:text-white focus:ring-2 focus:ring-primary-500 focus:border-transparent outline-none font-semibold"
             >
               {workshops.map((workshop) => (
@@ -313,7 +313,7 @@ const Workshops = ({ isAdmin }: { isAdmin: boolean }) => {
                   className="w-full px-3 py-1.5 text-sm border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-primary-500 focus:border-transparent outline-none"
                 >
                   <option value=""> All Product</option>
-                  <option value="vesti">Veshti</option>
+                  <option value="veshti">Veshti</option>
                   <option value="saree">Saree</option>
                 </select>
               </div>
@@ -486,7 +486,7 @@ const Workshops = ({ isAdmin }: { isAdmin: boolean }) => {
                           <span className="text-gray-700 dark:text-gray-300">{beam.end_date || '-'}</span>
                         </td>
                         <td className="py-4 px-6">
-                          <span className={`px-3 py-1 text-sm rounded-full font-semibold ${beam.fabric_type === 'vesti'
+                          <span className={`px-3 py-1 text-sm rounded-full font-semibold ${beam.fabric_type === 'veshti'
                             ? 'bg-green-100 dark:bg-green-900 text-green-700 dark:text-green-300'
                             : 'bg-purple-100 dark:bg-purple-900 text-purple-700 dark:text-purple-300'
                             }`}>
@@ -512,7 +512,7 @@ const Workshops = ({ isAdmin }: { isAdmin: boolean }) => {
             const damageRate = machine.meters_used > 0
               ? ((machine.total_damaged / machine.meters_used) * 100).toFixed(1)
               : 0;
-            const hasBeam = machine.beam_id !== null;
+            const hasBeam = machine.beam_id && machine.beam_id !== null && machine.beam_id !== '';
 
             return (
               <div
@@ -526,10 +526,14 @@ const Workshops = ({ isAdmin }: { isAdmin: boolean }) => {
                     <h3 className="text-lg font-bold text-gray-900 dark:text-white">
                       Machine {machine.machine_number}
                     </h3>
-                    <p className="text-sm text-gray-600 dark:text-gray-400">{machine.customer_name}</p>
-                    <span className="inline-block mt-2 px-3 py-1 text-xs font-semibold rounded-full bg-blue-100 dark:bg-blue-900 text-blue-700 dark:text-blue-300">
-                      {machine.fabric_type.toUpperCase()}
-                    </span>
+                    {hasBeam && (
+                      <>
+                        <p className="text-sm text-gray-600 dark:text-gray-400">{machine.customer_name}</p>
+                        <span className="inline-block mt-2 px-3 py-1 text-xs font-semibold rounded-full bg-blue-100 dark:bg-blue-900 text-blue-700 dark:text-blue-300">
+                          {machine.fabric_type.toUpperCase()}
+                        </span>
+                      </>
+                    )}
                   </div>
                   <div className="flex items-center space-x-2">
                     {hasBeam && remainingPercentage < 20 && (
@@ -599,11 +603,11 @@ const Workshops = ({ isAdmin }: { isAdmin: boolean }) => {
                   </div>
                 ) : (
                   <div className="text-center py-8">
-                    <p className="text-gray-400 text-sm">No active beam</p>
+                    <p className="text-gray-400 dark:text-gray-500 text-sm mb-3">No active beam</p>
                     {isAdmin && (
                       <Link
                         to="/add-beam"
-                        className="inline-block mt-3 px-4 py-2 bg-primary-500 text-white rounded-xl hover:bg-primary-600 transition text-sm"
+                        className="inline-block px-6 py-2.5 bg-cyan-500 text-white rounded-xl hover:bg-cyan-600 transition font-medium"
                       >
                         + Start Beam
                       </Link>

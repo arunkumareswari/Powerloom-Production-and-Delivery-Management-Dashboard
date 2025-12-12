@@ -86,7 +86,7 @@ const Reports = ({ isAdmin }: { isAdmin: boolean }) => {
       beam.start_date,
       beam.end_date || 'Active',
       beam.total_beam_meters,
-      beam.total_pieces,
+      beam.total_good,
       beam.total_damaged,
       beam.total_amount
     ]);
@@ -133,7 +133,7 @@ const Reports = ({ isAdmin }: { isAdmin: boolean }) => {
       beam.start_date,
       beam.end_date || 'Running',
       `${beam.total_beam_meters}m`,
-      beam.total_pieces.toString(),
+      beam.total_good.toString(),
       beam.total_damaged.toString(),
       `Rs.${parseFloat(beam.total_amount).toLocaleString()}`
     ]);
@@ -156,7 +156,7 @@ const Reports = ({ isAdmin }: { isAdmin: boolean }) => {
 
   const calculateTotals = () => {
     return filteredData.reduce((acc, beam) => ({
-      totalPieces: acc.totalPieces + beam.total_pieces,
+      totalPieces: acc.totalPieces + (beam.total_good || 0),
       totalDamaged: acc.totalDamaged + beam.total_damaged,
       totalAmount: acc.totalAmount + parseFloat(beam.total_amount),
     }), { totalPieces: 0, totalDamaged: 0, totalAmount: 0 });
@@ -379,7 +379,7 @@ const Reports = ({ isAdmin }: { isAdmin: boolean }) => {
                       </span>
                     </td>
                     <td className="py-3 px-4 text-right text-gray-900 dark:text-white">{beam.total_beam_meters}m</td>
-                    <td className="py-3 px-4 text-right font-semibold text-green-600 dark:text-green-400">{beam.total_pieces}</td>
+                    <td className="py-3 px-4 text-right font-semibold text-green-600 dark:text-green-400">{beam.total_good}</td>
                     <td className="py-3 px-4 text-right font-semibold text-red-600 dark:text-red-400">{beam.total_damaged}</td>
                     <td className="py-3 px-4 text-right font-semibold text-primary-600 dark:text-primary-400">
                       ₹{parseFloat(beam.total_amount).toLocaleString()}

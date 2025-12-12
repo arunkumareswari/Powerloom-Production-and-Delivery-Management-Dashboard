@@ -34,7 +34,7 @@ export const dashboardAPI = {
 // Beam APIs
 export const beamAPI = {
   getAll: (status: string = 'active') => api.get('/beams', { params: { status } }),
-  getById: (id: number) => api.get(`/beams/${id}`),
+  getById: (id: string) => api.get(`/beams/${id}`),  // Changed to string for MongoDB ObjectId
   startBeam: (data: any) => api.post('/beams/start', data),
 };
 
@@ -46,7 +46,7 @@ export const deliveryAPI = {
 // Workshop APIs
 export const workshopAPI = {
   getAll: () => api.get('/workshops'),
-  getMachines: (workshopId: number) => api.get(`/workshops/${workshopId}/machines`),
+  getMachines: (workshopId: string) => api.get(`/workshops/${workshopId}/machines`),  // Changed to string
 };
 
 // Customer APIs
@@ -64,7 +64,7 @@ export const designAPI = {
 export const reportAPI = {
   getBeamReport: (startDate: string, endDate: string) =>
     api.get('/reports/beam-details', { params: { start_date: startDate, end_date: endDate } }),
-  getDeliveryReport: (startDate: string, endDate: string, workshopId?: number) =>
+  getDeliveryReport: (startDate: string, endDate: string, workshopId?: string) =>  // Changed to string
     api.get('/reports/delivery-details', { params: { start_date: startDate, end_date: endDate, workshop_id: workshopId } }),
 };
 

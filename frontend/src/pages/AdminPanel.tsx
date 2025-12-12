@@ -22,13 +22,13 @@ const AdminPanel = () => {
     const [workshopForm, setWorkshopForm] = useState({
         name: '',
         location: '',
-        workshop_type: 'vesti',
+        workshop_type: 'veshti',
     });
 
     const [machineForm, setMachineForm] = useState({
         workshop_id: '',
         machine_number: '',
-        fabric_type: 'vesti',
+        fabric_type: 'veshti',
     });
 
     const [customerForm, setCustomerForm] = useState({
@@ -83,7 +83,7 @@ const AdminPanel = () => {
                 machine_count: 0,
             });
             setSuccess('Workshop added successfully!');
-            setWorkshopForm({ name: '', location: '', workshop_type: 'vesti' });
+            setWorkshopForm({ name: '', location: '', workshop_type: 'veshti' });
             fetchAllData();
         } catch (err: any) {
             setError(err.response?.data?.detail || 'Failed to add workshop');
@@ -116,12 +116,12 @@ const AdminPanel = () => {
         setError('');
         try {
             await api.post('/machines', {
-                workshop_id: parseInt(machineForm.workshop_id),
+                workshop_id: machineForm.workshop_id,  // Keep as string for MongoDB ObjectId
                 machine_number: parseInt(machineForm.machine_number),
                 fabric_type: machineForm.fabric_type,
             });
             setSuccess('Machine added successfully!');
-            setMachineForm({ workshop_id: '', machine_number: '', fabric_type: 'vesti' });
+            setMachineForm({ workshop_id: '', machine_number: '', fabric_type: 'veshti' });
             fetchAllData();
         } catch (err: any) {
             setError(err.response?.data?.detail || 'Failed to add machine');
@@ -303,7 +303,7 @@ const AdminPanel = () => {
                                     <input type="text" placeholder="Workshop Name *" value={workshopForm.name} onChange={(e) => setWorkshopForm({ ...workshopForm, name: e.target.value })} className="px-4 py-3 border border-gray-300 dark:border-gray-600 rounded-xl bg-white dark:bg-gray-800 text-gray-900 dark:text-white focus:ring-2 focus:ring-primary-500 outline-none" required />
                                     <input type="text" placeholder="Location" value={workshopForm.location} onChange={(e) => setWorkshopForm({ ...workshopForm, location: e.target.value })} className="px-4 py-3 border border-gray-300 dark:border-gray-600 rounded-xl bg-white dark:bg-gray-800 text-gray-900 dark:text-white focus:ring-2 focus:ring-primary-500 outline-none" />
                                     <select value={workshopForm.workshop_type} onChange={(e) => setWorkshopForm({ ...workshopForm, workshop_type: e.target.value })} className="px-4 py-3 border border-gray-300 dark:border-gray-600 rounded-xl bg-white dark:bg-gray-800 text-gray-900 dark:text-white focus:ring-2 focus:ring-primary-500 outline-none md:col-span-2">
-                                        <option value="vesti">Veshti</option>
+                                        <option value="veshti">Veshti</option>
                                         <option value="saree">Saree</option>
                                         <option value="mixed">Mixed</option>
                                     </select>
@@ -338,9 +338,20 @@ const AdminPanel = () => {
                                         <option value="">Select Workshop *</option>
                                         {workshops.map((workshop) => (<option key={workshop.id} value={workshop.id}>{workshop.name}</option>))}
                                     </select>
-                                    <input type="text" placeholder="Machine Number *" value={machineForm.machine_number} onChange={(e) => setMachineForm({ ...machineForm, machine_number: e.target.value })} className="px-4 py-3 border border-gray-300 dark:border-gray-600 rounded-xl bg-white dark:bg-gray-800 text-gray-900 dark:text-white focus:ring-2 focus:ring-primary-500 outline-none" required />
+                                    <input
+                                        type="text"
+                                        inputMode="numeric"
+                                        placeholder="Machine Number *"
+                                        value={machineForm.machine_number}
+                                        onChange={(e) => {
+                                            const value = e.target.value.replace(/[^0-9]/g, ''); // Only allow numbers
+                                            setMachineForm({ ...machineForm, machine_number: value });
+                                        }}
+                                        className="px-4 py-3 border border-gray-300 dark:border-gray-600 rounded-xl bg-white dark:bg-gray-800 text-gray-900 dark:text-white focus:ring-2 focus:ring-primary-500 outline-none"
+                                        required
+                                    />
                                     <select value={machineForm.fabric_type} onChange={(e) => setMachineForm({ ...machineForm, fabric_type: e.target.value })} className="px-4 py-3 border border-gray-300 dark:border-gray-600 rounded-xl bg-white dark:bg-gray-800 text-gray-900 dark:text-white focus:ring-2 focus:ring-primary-500 outline-none">
-                                        <option value="vesti">Veshti</option>
+                                        <option value="veshti">Veshti</option>
                                         <option value="saree">Saree</option>
                                     </select>
                                 </div>

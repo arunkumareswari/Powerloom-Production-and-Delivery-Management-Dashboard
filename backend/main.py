@@ -1,17 +1,18 @@
 # ========================================
-# FILE: main.py (FastAPI Entry Point)
+# FILE: main.py (FastAPI Entry Point with MongoDB)
 # ========================================
 
 from fastapi import FastAPI, Depends, HTTPException, status
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
-from typing import Optional
-import mysql.connector
-from mysql.connector import Error
+from typing import Optional, List
+from pymongo import MongoClient
+from bson import ObjectId
+from bson.errors import InvalidId
 import bcrypt
 import jwt
 from datetime import datetime, timedelta
-from pydantic import BaseModel
+from pydantic import BaseModel, Field
 from decimal import Decimal
 import os
 from dotenv import load_dotenv
@@ -38,20 +39,48 @@ ACCESS_TOKEN_EXPIRE_MINUTES = 1440  # 24 hours
 security = HTTPBearer()
 
 # ========================================
-# Database Connection
+# MongoDB Connection
 # ========================================
 
-def get_db_connection():
-    try:
-        connection = mysql.connector.connect(
-            host=os.getenv("DB_HOST", "localhost"),
-            database=os.getenv("DB_NAME", "powerloom_db"),
-            user=os.getenv("DB_USER", "root"),
-            password=os.getenv("DB_PASSWORD", "")
-        )
-        return connection
-    except Error as e:
-        raise HTTPException(status_code=500, detail=f"Database connection failed: {str(e)}")
+MONGODB_URI = os.getenv("MONGODB_URI")
+client = MongoClient(MONGODB_URI)
+db = client.powerloom_db
+
+# Collections
+customers_col = db.customers
+workshops_col = db.workshops
+machines_col = db.machines
+design_presets_col = db.design_presets
+beams_col = db.beams
+deliveries_col = db.deliveries
+admin_users_col = db.admin_users
+
+# Helper function to convert ObjectId and datetime to JSON-serializable types
+def serialize_doc(doc):
+    if doc is None:
+        return None
+    
+    # Make a copy to avoid modifying the original
+    result = {}
+    
+    for key, value in doc.items():
+        if key == "_id":
+            result["id"] = str(value)
+        elif isinstance(value, ObjectId):
+            result[key] = str(value)
+        elif isinstance(value, datetime):
+            result[key] = value.isoformat()
+        elif isinstance(value, dict):
+            result[key] = serialize_doc(value)
+        elif isinstance(value, list):
+            result[key] = [serialize_doc(item) if isinstance(item, dict) else item for item in value]
+        else:
+            result[key] = value
+    
+    return result
+
+def serialize_docs(docs):
+    return [serialize_doc(doc) for doc in docs]
 
 # ========================================
 # Pydantic Models
@@ -67,14 +96,14 @@ class TokenResponse(BaseModel):
 
 class BeamStartCreate(BaseModel):
     beam_number: str
-    customer_id: int
-    machine_id: int
+    customer_id: str
+    machine_id: str
     total_beam_meters: float
     meters_per_piece: float
     start_date: str
 
 class DeliveryCreate(BaseModel):
-    beam_id: int
+    beam_id: str
     delivery_date: str
     design_name: str
     price_per_piece: float
@@ -99,6 +128,14 @@ class DesignPresetCreate(BaseModel):
     price: float
     label: str
 
+class MachineCreate(BaseModel):
+    workshop_id: str
+    machine_number: int
+    fabric_type: str
+
+class ResetDatabaseRequest(BaseModel):
+    admin_password: str
+
 # ========================================
 # Auth Helper Functions
 # ========================================
@@ -120,7 +157,7 @@ def verify_token(credentials: HTTPAuthorizationCredentials = Depends(security)):
         return username
     except jwt.ExpiredSignatureError:
         raise HTTPException(status_code=401, detail="Token expired")
-    except jwt.JWTError:
+    except Exception:
         raise HTTPException(status_code=401, detail="Invalid token")
 
 # ========================================
@@ -129,145 +166,70 @@ def verify_token(credentials: HTTPAuthorizationCredentials = Depends(security)):
 
 @app.post("/api/auth/login", response_model=TokenResponse)
 async def login(request: LoginRequest):
-    """
-    Admin login endpoint - completely rewritten from scratch
-    Authenticates user and returns JWT token
-    """
-    connection = None
-    cursor = None
-    
+    """Admin login endpoint"""
     try:
-        # Step 1: Connect to database
-        connection = mysql.connector.connect(
-            host=os.getenv("DB_HOST", "localhost"),
-            database=os.getenv("DB_NAME", "powerloom_db"),
-            user=os.getenv("DB_USER", "root"),
-            password=os.getenv("DB_PASSWORD", "")
-        )
+        user = admin_users_col.find_one({"username": request.username})
         
-        if not connection.is_connected():
-            raise HTTPException(status_code=500, detail="Database connection failed")
-        
-        # Step 2: Query user from database
-        cursor = connection.cursor(dictionary=True)
-        query = "SELECT id, username, password_hash, email, is_active FROM admin_users WHERE username = %s"
-        cursor.execute(query, (request.username,))
-        user_record = cursor.fetchone()
-        
-        # Step 3: Check if user exists
-        if not user_record:
-            if cursor:
-                cursor.close()
-            if connection:
-                connection.close()
+        if not user:
             raise HTTPException(status_code=401, detail="Invalid username or password")
         
-        # Step 4: Check if user is active
-        if not user_record['is_active']:
-            if cursor:
-                cursor.close()
-            if connection:
-                connection.close()
+        if not user.get('is_active', True):
             raise HTTPException(status_code=401, detail="Account is disabled")
         
-        # Step 5: Verify password with bcrypt
-        stored_hash = user_record['password_hash']
-        password_bytes = request.password.encode('utf-8')
-        hash_bytes = stored_hash.encode('utf-8')
-        
-        password_match = bcrypt.checkpw(password_bytes, hash_bytes)
-        
-        if not password_match:
-            if cursor:
-                cursor.close()
-            if connection:
-                connection.close()
+        # Verify password
+        if not bcrypt.checkpw(request.password.encode(), user['password_hash'].encode()):
             raise HTTPException(status_code=401, detail="Invalid username or password")
         
-        # Step 6: Update last login timestamp
-        update_query = "UPDATE admin_users SET last_login = NOW() WHERE id = %s"
-        cursor.execute(update_query, (user_record['id'],))
-        connection.commit()
+        # Update last login
+        admin_users_col.update_one(
+            {"_id": user["_id"]},
+            {"$set": {"last_login": datetime.utcnow()}}
+        )
         
-        # Step 7: Generate JWT token
-        token_data = {"sub": user_record['username']}
+        # Generate token
+        token_data = {"sub": user['username']}
         access_token = create_access_token(token_data)
-        
-        # Step 8: Clean up and return
-        cursor.close()
-        connection.close()
         
         return TokenResponse(access_token=access_token, token_type="bearer")
         
-    except HTTPException as http_err:
-        # Re-raise HTTP exceptions as-is
-        raise http_err
-        
-    except mysql.connector.Error as db_err:
-        # Database errors
-        print(f"DATABASE ERROR: {db_err}")
-        if cursor:
-            cursor.close()
-        if connection:
-            connection.close()
-        raise HTTPException(status_code=500, detail=f"Database error: {str(db_err)}")
-        
-    except Exception as err:
-        # Any other errors
-        print(f"UNEXPECTED ERROR: {type(err).__name__}: {err}")
-        import traceback
-        traceback.print_exc()
-        if cursor:
-            cursor.close()
-        if connection:
-            connection.close()
-        raise HTTPException(status_code=500, detail=f"Server error: {str(err)}")
+    except HTTPException:
+        raise
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Server error: {str(e)}")
 
 @app.post("/api/auth/reset-password")
 async def reset_password(username: str, new_password: str, admin: str = Depends(verify_token)):
-    conn = get_db_connection()
-    cursor = conn.cursor()
-    
     hashed = bcrypt.hashpw(new_password.encode(), bcrypt.gensalt())
-    cursor.execute("UPDATE admin_users SET password_hash = %s WHERE username = %s", (hashed.decode(), username))
-    conn.commit()
-    
-    cursor.close()
-    conn.close()
+    admin_users_col.update_one(
+        {"username": username},
+        {"$set": {"password_hash": hashed.decode()}}
+    )
     return {"message": "Password reset successful"}
 
 @app.post("/api/admin/reset-database")
-async def reset_database(admin_password: str, admin: str = Depends(verify_token)):
+async def reset_database(request: ResetDatabaseRequest, admin: str = Depends(verify_token)):
     """Reset database - Delete ALL data except admin credentials"""
-    conn = get_db_connection()
-    cursor = conn.cursor(dictionary=True)
-    
     try:
         # Verify admin password
-        cursor.execute("SELECT password_hash FROM admin_users WHERE username = 'admin'")
-        admin_user = cursor.fetchone()
+        admin_user = admin_users_col.find_one({"username": "admin"})
         
-        if not admin_user or not bcrypt.checkpw(admin_password.encode(), admin_user['password_hash'].encode()):
+        if not admin_user or not bcrypt.checkpw(request.admin_password.encode(), admin_user['password_hash'].encode()):
             raise HTTPException(status_code=401, detail="Invalid admin password")
         
-        # Delete all data in correct order (respecting foreign keys)
-        cursor.execute("DELETE FROM deliveries")
-        cursor.execute("DELETE FROM beam_starts")
-        cursor.execute("DELETE FROM design_presets")
-        cursor.execute("DELETE FROM machines")
-        cursor.execute("DELETE FROM workshops")
-        cursor.execute("DELETE FROM customers")
-        
-        conn.commit()
+        # Delete all data
+        deliveries_col.delete_many({})
+        beams_col.delete_many({})
+        design_presets_col.delete_many({})
+        machines_col.delete_many({})
+        workshops_col.delete_many({})
+        customers_col.delete_many({})
         
         return {"message": "Database reset successfully. All data deleted."}
     
-    except Error as e:
-        conn.rollback()
+    except HTTPException:
+        raise
+    except Exception as e:
         raise HTTPException(status_code=500, detail=f"Database error: {str(e)}")
-    finally:
-        cursor.close()
-        conn.close()
 
 # ========================================
 # DASHBOARD ENDPOINTS
@@ -275,140 +237,133 @@ async def reset_database(admin_password: str, admin: str = Depends(verify_token)
 
 @app.get("/api/dashboard/overview")
 async def get_dashboard_overview(start_date: str = None, end_date: str = None, fabric_type: str = None):
-    conn = get_db_connection()
-    cursor = conn.cursor(dictionary=True)
-    
-    # Build date filter condition
-    if start_date and end_date:
-        date_filter = f"delivery_date BETWEEN '{start_date}' AND '{end_date}'"
-    elif start_date:
-        date_filter = f"delivery_date >= '{start_date}'"
-    elif end_date:
-        date_filter = f"delivery_date <= '{end_date}'"
-    else:
-        # Default to current month
-        date_filter = "MONTH(delivery_date) = MONTH(CURRENT_DATE()) AND YEAR(delivery_date) = YEAR(CURRENT_DATE())"
-    
-    # Build fabric filter condition
-    fabric_filter = f"AND m.fabric_type = '{fabric_type}'" if fabric_type else ""
-    
-    # Active beams count
-    cursor.execute("SELECT COUNT(*) as count FROM beam_starts WHERE status = 'active'")
-    active_beams = cursor.fetchone()['count']
-    
-    # Production with date and fabric filter
-    cursor.execute(f"""
-        SELECT COALESCE(SUM(d.good_pieces), 0) as total_pieces,
-               COALESCE(SUM(d.damaged_pieces), 0) as total_damaged
-        FROM deliveries d
-        JOIN beam_starts b ON d.beam_id = b.id
-        JOIN machines m ON b.machine_id = m.id
-        WHERE {date_filter} {fabric_filter}
-    """)
-    production = cursor.fetchone()
-    
-    # Total amount with date and fabric filter
-    cursor.execute(f"""
-        SELECT COALESCE(SUM(d.total_amount), 0) as pending_amount
-        FROM deliveries d
-        JOIN beam_starts b ON d.beam_id = b.id
-        JOIN machines m ON b.machine_id = m.id
-        WHERE {date_filter} {fabric_filter}
-    """)
-    pending = cursor.fetchone()
-    
-    # Build fabric JOIN filter for LEFT JOIN queries
-    fabric_join_filter = f"AND m.fabric_type = '{fabric_type}'" if fabric_type else ""
-    
-    # Workshop-wise production with date and fabric filter
-    # Use INNER JOIN when fabric filter is active to hide workshops without that fabric
-    join_type = "INNER JOIN" if fabric_type else "LEFT JOIN"
-    cursor.execute(f"""
-        SELECT w.name as workshop_name, 
-               COALESCE(SUM(d.good_pieces), 0) as total_pieces
-        FROM workshops w
-        {join_type} beam_starts b ON w.id = b.workshop_id
-        {join_type} machines m ON b.machine_id = m.id {fabric_join_filter}
-        LEFT JOIN deliveries d ON b.id = d.beam_id AND {date_filter}
-        GROUP BY w.id, w.name
-        HAVING total_pieces > 0
-    """)
-    workshop_production = cursor.fetchall()
-    
-    # Customer-wise summary with date and fabric filter
-    cursor.execute(f"""
-        SELECT c.name as customer_name,
-               COALESCE(SUM(d.good_pieces), 0) as total_pieces,
-               COALESCE(SUM(d.total_amount), 0) as total_amount
-        FROM customers c
-        LEFT JOIN beam_starts b ON c.id = b.customer_id
-        LEFT JOIN machines m ON b.machine_id = m.id {fabric_join_filter}
-        LEFT JOIN deliveries d ON b.id = d.beam_id AND {date_filter}
-        GROUP BY c.id, c.name
-    """)
-    customer_summary = cursor.fetchall()
-    
-    cursor.close()
-    conn.close()
-    
-    return {
-        "active_beams": active_beams,
-        "total_pieces_this_month": production['total_pieces'],
-        "total_damaged_this_month": production['total_damaged'],
-        "pending_amount_this_month": float(pending['pending_amount']),
-        "workshop_production": workshop_production,
-        "customer_summary": customer_summary
-    }
+    try:
+        # Active beams count
+        active_beams = beams_col.count_documents({"status": "active"})
+        
+        # Build date filter
+        date_filter = {}
+        if start_date and end_date:
+            date_filter = {"delivery_date": {"$gte": start_date, "$lte": end_date}}
+        elif start_date:
+            date_filter = {"delivery_date": {"$gte": start_date}}
+        elif end_date:
+            date_filter = {"delivery_date": {"$lte": end_date}}
+        else:
+            # Current month
+            now = datetime.now()
+            first_day = now.replace(day=1).strftime("%Y-%m-%d")
+            date_filter = {"delivery_date": {"$gte": first_day}}
+        
+        # Get all deliveries with date filter
+        pipeline = [{"$match": date_filter}]
+        
+        if fabric_type:
+            # Join with beams and machines to filter by fabric type
+            pipeline.extend([
+                {"$lookup": {"from": "beams", "localField": "beam_id", "foreignField": "_id", "as": "beam"}},
+                {"$unwind": "$beam"},
+                {"$lookup": {"from": "machines", "localField": "beam.machine_id", "foreignField": "_id", "as": "machine"}},
+                {"$unwind": "$machine"},
+                {"$match": {"machine.fabric_type": fabric_type}}
+            ])
+        
+        pipeline.append({
+            "$group": {
+                "_id": None,
+                "total_pieces": {"$sum": "$good_pieces"},
+                "total_damaged": {"$sum": "$damaged_pieces"},
+                "pending_amount": {"$sum": "$total_amount"}
+            }
+        })
+        
+        result = list(deliveries_col.aggregate(pipeline))
+        production = result[0] if result else {"total_pieces": 0, "total_damaged": 0, "pending_amount": 0}
+        
+        # Workshop-wise production
+        workshop_pipeline = [
+            {"$match": date_filter},
+            {"$lookup": {"from": "beams", "localField": "beam_id", "foreignField": "_id", "as": "beam"}},
+            {"$unwind": "$beam"},
+            {"$lookup": {"from": "workshops", "localField": "beam.workshop_id", "foreignField": "_id", "as": "workshop"}},
+            {"$unwind": "$workshop"},
+            {"$group": {"_id": "$workshop.name", "total_pieces": {"$sum": "$good_pieces"}}},
+            {"$project": {"workshop_name": "$_id", "total_pieces": 1, "_id": 0}}
+        ]
+        workshop_production = list(deliveries_col.aggregate(workshop_pipeline))
+        
+        # Customer-wise summary
+        customer_pipeline = [
+            {"$match": date_filter},
+            {"$lookup": {"from": "beams", "localField": "beam_id", "foreignField": "_id", "as": "beam"}},
+            {"$unwind": "$beam"},
+            {"$lookup": {"from": "customers", "localField": "beam.customer_id", "foreignField": "_id", "as": "customer"}},
+            {"$unwind": "$customer"},
+            {"$group": {
+                "_id": "$customer.name",
+                "total_pieces": {"$sum": "$good_pieces"},
+                "total_amount": {"$sum": "$total_amount"}
+            }},
+            {"$project": {"customer_name": "$_id", "total_pieces": 1, "total_amount": 1, "_id": 0}}
+        ]
+        customer_summary = list(deliveries_col.aggregate(customer_pipeline))
+        
+        return {
+            "active_beams": active_beams,
+            "total_pieces_this_month": production.get('total_pieces', 0),
+            "total_damaged_this_month": production.get('total_damaged', 0),
+            "pending_amount_this_month": float(production.get('pending_amount', 0)),
+            "workshop_production": workshop_production,
+            "customer_summary": customer_summary
+        }
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
 
 # ========================================
 # ANALYTICS ENDPOINTS
 # ========================================
 
-
 @app.get("/api/analytics/production-trend")
 async def get_production_trend(days: int = 30, fabric_type: str = None):
     """Get daily production trend with workshop breakdown"""
-    conn = get_db_connection()
-    cursor = conn.cursor(dictionary=True)
-    
     try:
-        # Build fabric filter
-        fabric_filter = f"AND m.fabric_type = '{fabric_type}'" if fabric_type else ""
+        from_date = (datetime.now() - timedelta(days=days)).strftime("%Y-%m-%d")
         
-        # Get workshop-wise daily production for the last N days
-        cursor.execute(f"""
-            SELECT 
-                DATE(d.delivery_date) as date,
-                w.name as workshop_name,
-                SUM(d.good_pieces) as good_pieces,
-                SUM(d.damaged_pieces) as damaged_pieces,
-                SUM(d.good_pieces + d.damaged_pieces) as total_pieces
-            FROM deliveries d
-            JOIN beam_starts b ON d.beam_id = b.id
-            JOIN machines m ON b.machine_id = m.id
-            JOIN workshops w ON m.workshop_id = w.id
-            WHERE d.delivery_date >= DATE_SUB(CURDATE(), INTERVAL %s DAY) {fabric_filter}
-            GROUP BY DATE(d.delivery_date), w.id, w.name
-            ORDER BY date ASC, w.name
-        """, (days,))
+        pipeline = [
+            {"$match": {"delivery_date": {"$gte": from_date}}},
+            {"$lookup": {"from": "beams", "localField": "beam_id", "foreignField": "_id", "as": "beam"}},
+            {"$unwind": "$beam"},
+            {"$lookup": {"from": "workshops", "localField": "beam.workshop_id", "foreignField": "_id", "as": "workshop"}},
+            {"$unwind": "$workshop"}
+        ]
         
-        results = cursor.fetchall()
+        if fabric_type:
+            pipeline.append({"$match": {"beam.fabric_type": fabric_type}})
         
-        # Transform data to have one row per date with all workshops
+        pipeline.extend([
+            {"$group": {
+                "_id": {"date": "$delivery_date", "workshop": "$workshop.name"},
+                "total_pieces": {"$sum": {"$add": ["$good_pieces", "$damaged_pieces"]}}
+            }},
+            {"$sort": {"_id.date": 1}}
+        ])
+        
+        results = list(deliveries_col.aggregate(pipeline))
+        
+        # Transform data
         daily_data = {}
         workshops = set()
         
         for row in results:
-            date = str(row['date'])
-            workshop = row['workshop_name']
+            date = row['_id']['date']
+            workshop = row['_id']['workshop']
             workshops.add(workshop)
             
             if date not in daily_data:
                 daily_data[date] = {'date': date}
-            
             daily_data[date][workshop] = row['total_pieces']
         
-        # Convert to list and fill missing workshops with 0
+        # Fill missing workshops with 0
         formatted_data = []
         for date in sorted(daily_data.keys()):
             data = daily_data[date]
@@ -417,160 +372,194 @@ async def get_production_trend(days: int = 30, fabric_type: str = None):
                     data[workshop] = 0
             formatted_data.append(data)
         
-        cursor.close()
-        conn.close()
-        
         return {"data": formatted_data, "workshops": list(workshops)}
-        
-    except Error as e:
-        cursor.close()
-        conn.close()
+    except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
-
-
 
 @app.get("/api/analytics/fabric-distribution")
 async def get_fabric_distribution():
     """Get Product Type distribution"""
-    conn = get_db_connection()
-    cursor = conn.cursor(dictionary=True)
-    
     try:
-        cursor.execute("""
-            SELECT 
-                b.fabric_type as name,
-                SUM(d.good_pieces + d.damaged_pieces) as value,
-                COUNT(DISTINCT b.id) as beam_count
-            FROM beam_starts b
-            LEFT JOIN deliveries d ON b.id = d.beam_id
-            GROUP BY b.fabric_type
-            ORDER BY value DESC
-        """)
+        pipeline = [
+            {"$lookup": {"from": "deliveries", "localField": "_id", "foreignField": "beam_id", "as": "deliveries"}},
+            {"$group": {
+                "_id": "$fabric_type",
+                "value": {"$sum": {"$reduce": {
+                    "input": "$deliveries",
+                    "initialValue": 0,
+                    "in": {"$add": ["$$value", {"$add": ["$$this.good_pieces", "$$this.damaged_pieces"]}]}
+                }}},
+                "beam_count": {"$sum": 1}
+            }},
+            {"$project": {"name": "$_id", "value": 1, "beams": "$beam_count", "_id": 0}}
+        ]
         
-        fabric_data = cursor.fetchall()
-        
-        formatted_data = []
-        for row in fabric_data:
-            formatted_data.append({
-                "name": row['name'] or 'Unknown',
-                "value": row['value'] or 0,
-                "beams": row['beam_count']
-            })
-        
-        cursor.close()
-        conn.close()
-        
-        return {"data": formatted_data}
-        
-    except Error as e:
-        cursor.close()
-        conn.close()
+        fabric_data = list(beams_col.aggregate(pipeline))
+        return {"data": fabric_data}
+    except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
-
 
 @app.get("/api/analytics/machine-quality")
 async def get_machine_quality(fabric_type: str = None):
-    """Get machine-wise quality data (good vs damaged pieces)"""
-    conn = get_db_connection()
-    cursor = conn.cursor(dictionary=True)
-    
+    """Get machine-wise quality data"""
     try:
-        # Build fabric filter
-        fabric_filter = f"WHERE m.fabric_type = '{fabric_type}'" if fabric_type else ""
-        having_clause = "HAVING total_pieces > 0" if not fabric_filter else "AND total_pieces > 0"
+        pipeline = [
+            {"$lookup": {"from": "beams", "localField": "_id", "foreignField": "machine_id", "as": "beams"}},
+            {"$lookup": {"from": "workshops", "localField": "workshop_id", "foreignField": "_id", "as": "workshop"}},
+            {"$unwind": {"path": "$workshop", "preserveNullAndEmptyArrays": True}}
+        ]
         
-        cursor.execute(f"""
-            SELECT 
-                w.name as workshop_name,
-                m.machine_number,
-                CONCAT(w.name, ' M', m.machine_number) as machine_name,
-                COALESCE(SUM(d.good_pieces), 0) as good_pieces,
-                COALESCE(SUM(d.damaged_pieces), 0) as damaged_pieces,
-                COALESCE(SUM(d.good_pieces + d.damaged_pieces), 0) as total_pieces
-            FROM machines m
-            JOIN workshops w ON m.workshop_id = w.id
-            LEFT JOIN beam_starts b ON m.id = b.machine_id
-            LEFT JOIN deliveries d ON b.id = d.beam_id
-            {fabric_filter}
-            GROUP BY w.id, w.name, m.id, m.machine_number
-            HAVING total_pieces > 0
-            ORDER BY w.name, m.machine_number
-        """)
+        if fabric_type:
+            pipeline.append({"$match": {"fabric_type": fabric_type}})
         
-        results = cursor.fetchall()
-        cursor.close()
-        conn.close()
+        pipeline.extend([
+            {"$lookup": {"from": "deliveries", "localField": "beams._id", "foreignField": "beam_id", "as": "deliveries"}},
+            {"$project": {
+                "workshop_name": "$workshop.name",
+                "machine_number": 1,
+                "machine_name": {"$concat": ["$workshop.name", " M", {"$toString": "$machine_number"}]},
+                "good_pieces": {"$sum": "$deliveries.good_pieces"},
+                "damaged_pieces": {"$sum": "$deliveries.damaged_pieces"},
+                "total_pieces": {"$sum": {"$map": {
+                    "input": "$deliveries",
+                    "as": "d",
+                    "in": {"$add": ["$$d.good_pieces", "$$d.damaged_pieces"]}
+                }}}
+            }},
+            {"$match": {"total_pieces": {"$gt": 0}}},
+            {"$sort": {"workshop_name": 1, "machine_number": 1}}
+        ])
         
-        return {"data": results}
-        
-    except Error as e:
-        cursor.close()
-        conn.close()
+        results = list(machines_col.aggregate(pipeline))
+        return {"data": [serialize_doc(r) for r in results]}
+    except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
-
-
-# ========================================
-# WORKSHOP MACHINE PRODUCTION ENDPOINT
-# ========================================
 
 @app.get("/api/analytics/workshop-machine-production")
 async def get_workshop_machine_production(fabric_type: str = None):
     """Get machine-wise production data for each workshop"""
-    conn = get_db_connection()
-    cursor = conn.cursor(dictionary=True)
-    
     try:
-        # Build fabric filter
-        fabric_filter = f"AND m.fabric_type = '{fabric_type}'" if fabric_type else ""
+        match_filter = {}
+        if fabric_type:
+            match_filter["fabric_type"] = fabric_type
         
-        # Get all ACTIVE workshops with their machines and production
-        cursor.execute(f"""
-            SELECT 
-                w.id as workshop_id,
-                w.name as workshop_name,
-                m.id as machine_id,
-                m.machine_number,
-                COALESCE(SUM(d.good_pieces + d.damaged_pieces), 0) as total_production
-            FROM workshops w
-            LEFT JOIN machines m ON w.id = m.workshop_id {fabric_filter}
-            LEFT JOIN beam_starts b ON m.id = b.machine_id
-            LEFT JOIN deliveries d ON b.id = d.beam_id
-            GROUP BY w.id, w.name, m.id, m.machine_number
-            ORDER BY w.name, m.machine_number
-        """)
-        
-        machine_data = cursor.fetchall()
-        
-        # Group by workshop
-        workshops = {}
-        for row in machine_data:
-            workshop_name = row['workshop_name']
-            if workshop_name not in workshops:
-                workshops[workshop_name] = {
-                    'workshop_name': workshop_name,
-                    'machines': []
-                }
-            
-            if row['machine_id']:  # Only add if machine exists
-                workshops[workshop_name]['machines'].append({
-                    'machine_number': row['machine_number'],
-                    'production': row['total_production']
-                })
-        
-        # Filter out workshops with no machines
-        filtered_workshops = [
-            ws for ws in workshops.values() 
-            if len(ws['machines']) > 0
+        pipeline = [
+            {"$match": match_filter} if match_filter else {"$match": {}},
+            {"$lookup": {"from": "workshops", "localField": "workshop_id", "foreignField": "_id", "as": "workshop"}},
+            {"$unwind": "$workshop"},
+            {"$lookup": {"from": "beams", "localField": "_id", "foreignField": "machine_id", "as": "beams"}},
+            {"$lookup": {"from": "deliveries", "localField": "beams._id", "foreignField": "beam_id", "as": "deliveries"}},
+            {"$project": {
+                "workshop_name": "$workshop.name",
+                "machine_number": 1,
+                "total_production": {"$sum": {"$map": {
+                    "input": "$deliveries",
+                    "as": "d",
+                    "in": {"$add": ["$$d.good_pieces", "$$d.damaged_pieces"]}
+                }}}
+            }},
+            {"$group": {
+                "_id": "$workshop_name",
+                "machines": {"$push": {"machine_number": "$machine_number", "production": "$total_production"}}
+            }},
+            {"$project": {"workshop_name": "$_id", "machines": 1, "_id": 0}}
         ]
         
-        cursor.close()
-        conn.close()
+        results = list(machines_col.aggregate(pipeline))
+        return {"data": results}
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+# ========================================
+# REPORT ENDPOINTS
+# ========================================
+
+@app.get("/api/reports/beam-details")
+async def get_beam_report(start_date: str, end_date: str):
+    """Get beam report for date range"""
+    try:
+        pipeline = [
+            {"$match": {
+                "$or": [
+                    {"start_date": {"$gte": start_date, "$lte": end_date}},
+                    {"end_date": {"$gte": start_date, "$lte": end_date}},
+                    {"$and": [{"start_date": {"$lte": start_date}}, {"end_date": {"$gte": end_date}}]},
+                    {"$and": [{"start_date": {"$lte": start_date}}, {"status": "active"}]}
+                ]
+            }},
+            {"$lookup": {"from": "workshops", "localField": "workshop_id", "foreignField": "_id", "as": "workshop"}},
+            {"$lookup": {"from": "customers", "localField": "customer_id", "foreignField": "_id", "as": "customer"}},
+            {"$lookup": {"from": "machines", "localField": "machine_id", "foreignField": "_id", "as": "machine"}},
+            {"$lookup": {"from": "deliveries", "localField": "_id", "foreignField": "beam_id", "as": "deliveries"}},
+            {"$unwind": {"path": "$workshop", "preserveNullAndEmptyArrays": True}},
+            {"$unwind": {"path": "$customer", "preserveNullAndEmptyArrays": True}},
+            {"$unwind": {"path": "$machine", "preserveNullAndEmptyArrays": True}},
+            {"$project": {
+                "beam_number": 1,
+                "fabric_type": 1,
+                "total_beam_meters": 1,
+                "start_date": 1,
+                "end_date": 1,
+                "status": 1,
+                "workshop": "$workshop.name",
+                "customer": "$customer.name",
+                "machine_number": "$machine.machine_number",
+                "total_good": {"$sum": "$deliveries.good_pieces"},
+                "total_damaged": {"$sum": "$deliveries.damaged_pieces"},
+                "total_pieces": {"$sum": {"$map": {"input": "$deliveries", "as": "d", "in": {"$add": ["$$d.good_pieces", "$$d.damaged_pieces"]}}}},
+                "total_amount": {"$sum": "$deliveries.total_amount"}
+            }},
+            {"$sort": {"start_date": -1}}
+        ]
         
-        return {"data": filtered_workshops}
+        beams = list(beams_col.aggregate(pipeline))
+        return {"beams": [serialize_doc(b) for b in beams]}
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+@app.get("/api/reports/delivery-details")
+async def get_delivery_report(start_date: str, end_date: str, workshop_id: str = None):
+    """Get delivery report for date range"""
+    try:
+        match_filter = {"delivery_date": {"$gte": start_date, "$lte": end_date}}
         
-    except Error as e:
-        cursor.close()
-        conn.close()
+        pipeline = [
+            {"$match": match_filter},
+            {"$lookup": {"from": "beams", "localField": "beam_id", "foreignField": "_id", "as": "beam"}},
+            {"$unwind": {"path": "$beam", "preserveNullAndEmptyArrays": True}},
+            {"$lookup": {"from": "workshops", "localField": "beam.workshop_id", "foreignField": "_id", "as": "workshop"}},
+            {"$lookup": {"from": "customers", "localField": "beam.customer_id", "foreignField": "_id", "as": "customer"}},
+            {"$lookup": {"from": "machines", "localField": "beam.machine_id", "foreignField": "_id", "as": "machine"}},
+            {"$unwind": {"path": "$workshop", "preserveNullAndEmptyArrays": True}},
+            {"$unwind": {"path": "$customer", "preserveNullAndEmptyArrays": True}},
+            {"$unwind": {"path": "$machine", "preserveNullAndEmptyArrays": True}},
+        ]
+        
+        if workshop_id:
+            pipeline.append({"$match": {"workshop._id": ObjectId(workshop_id)}})
+        
+        pipeline.extend([
+            {"$project": {
+                "delivery_date": 1,
+                "design_name": 1,
+                "price_per_piece": 1,
+                "good_pieces": 1,
+                "damaged_pieces": 1,
+                "meters_used": 1,
+                "total_amount": 1,
+                "notes": 1,
+                "beam_number": "$beam.beam_number",
+                "fabric_type": "$beam.fabric_type",
+                "workshop": "$workshop.name",
+                "customer": "$customer.name",
+                "machine_number": "$machine.machine_number"
+            }},
+            {"$sort": {"delivery_date": -1}}
+        ])
+        
+        deliveries = list(deliveries_col.aggregate(pipeline))
+        return {"deliveries": [serialize_doc(d) for d in deliveries]}
+    except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
 
 # ========================================
@@ -579,284 +568,225 @@ async def get_workshop_machine_production(fabric_type: str = None):
 
 @app.get("/api/beams")
 async def get_all_beams(status: str = "active"):
-    conn = get_db_connection()
-    cursor = conn.cursor(dictionary=True)
-    
-    query = """
-        SELECT b.*, 
-               w.name as workshop_name,
-               c.name as customer_name,
-               COALESCE(m.machine_number, 'N/A') as machine_number,
-               COALESCE(SUM(d.good_pieces), 0) as total_good_pieces,
-               COALESCE(SUM(d.damaged_pieces), 0) as total_damaged_pieces,
-               COALESCE(SUM(d.meters_used), 0) as total_meters_used,
-               (b.total_beam_meters - COALESCE(SUM(d.meters_used), 0)) as remaining_meters
-        FROM beam_starts b
-        JOIN workshops w ON b.workshop_id = w.id
-        JOIN customers c ON b.customer_id = c.id
-        LEFT JOIN machines m ON b.machine_id = m.id
-        LEFT JOIN deliveries d ON b.id = d.beam_id
-        WHERE b.status = %s
-        GROUP BY b.id
-        ORDER BY b.start_date DESC
-    """
-    
-    cursor.execute(query, (status,))
-    beams = cursor.fetchall()
-    
-    # Convert Decimal and datetime to JSON-serializable types
-    for beam in beams:
-        for key, value in beam.items():
-            if isinstance(value, Decimal):
-                beam[key] = float(value)
-            elif isinstance(value, datetime):
-                beam[key] = value.isoformat()
-            elif hasattr(value, 'isoformat'):  # date objects
-                beam[key] = value.isoformat()
-    
-    cursor.close()
-    conn.close()
-    
-    return {"beams": beams}
+    try:
+        pipeline = [
+            {"$match": {"status": status}},
+            {"$lookup": {"from": "workshops", "localField": "workshop_id", "foreignField": "_id", "as": "workshop"}},
+            {"$lookup": {"from": "customers", "localField": "customer_id", "foreignField": "_id", "as": "customer"}},
+            {"$lookup": {"from": "machines", "localField": "machine_id", "foreignField": "_id", "as": "machine"}},
+            {"$lookup": {"from": "deliveries", "localField": "_id", "foreignField": "beam_id", "as": "deliveries"}},
+            {"$unwind": {"path": "$workshop", "preserveNullAndEmptyArrays": True}},
+            {"$unwind": {"path": "$customer", "preserveNullAndEmptyArrays": True}},
+            {"$unwind": {"path": "$machine", "preserveNullAndEmptyArrays": True}},
+            {"$project": {
+                "beam_number": 1,
+                "fabric_type": 1,
+                "total_beam_meters": 1,
+                "meters_per_piece": 1,
+                "start_date": 1,
+                "end_date": 1,
+                "status": 1,
+                "notes": 1,
+                "workshop_name": "$workshop.name",
+                "customer_name": "$customer.name",
+                "machine_number": {"$ifNull": ["$machine.machine_number", "N/A"]},
+                "total_good_pieces": {"$sum": "$deliveries.good_pieces"},
+                "total_damaged_pieces": {"$sum": "$deliveries.damaged_pieces"},
+                "total_meters_used": {"$sum": "$deliveries.meters_used"},
+                "remaining_meters": {"$subtract": ["$total_beam_meters", {"$sum": "$deliveries.meters_used"}]}
+            }},
+            {"$sort": {"start_date": -1}}
+        ]
+        
+        beams = list(beams_col.aggregate(pipeline))
+        return {"beams": [serialize_doc(b) for b in beams]}
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
 
 @app.get("/api/beams/{beam_id}")
-async def get_beam_details(beam_id: int):
-    conn = get_db_connection()
-    cursor = conn.cursor(dictionary=True)
-    
-    # Beam basic info
-    cursor.execute("""
-        SELECT b.*, 
-               w.name as workshop_name,
-               c.name as customer_name,
-               COALESCE(m.machine_number, 'N/A') as machine_number
-        FROM beam_starts b
-        JOIN workshops w ON b.workshop_id = w.id
-        JOIN customers c ON b.customer_id = c.id
-        LEFT JOIN machines m ON b.machine_id = m.id
-        WHERE b.id = %s
-    """, (beam_id,))
-    beam = cursor.fetchone()
-    
-    if not beam:
-        raise HTTPException(status_code=404, detail="Beam not found")
-    
-    # All deliveries
-    cursor.execute("""
-        SELECT * FROM deliveries 
-        WHERE beam_id = %s 
-        ORDER BY delivery_date DESC
-    """, (beam_id,))
-    deliveries = cursor.fetchall()
-    
-    # Calculate totals
-    cursor.execute("""
-        SELECT 
-            COALESCE(SUM(good_pieces), 0) as total_good,
-            COALESCE(SUM(damaged_pieces), 0) as total_damaged,
-            COALESCE(SUM(meters_used), 0) as total_meters_used,
-            COALESCE(SUM(total_amount), 0) as total_amount
-        FROM deliveries 
-        WHERE beam_id = %s
-    """, (beam_id,))
-    totals = cursor.fetchone()
-    
-    remaining_meters = float(beam['total_beam_meters']) - float(totals['total_meters_used'])
-    estimated_pieces = remaining_meters / float(beam['meters_per_piece']) if beam['meters_per_piece'] > 0 else 0
-    
-    cursor.close()
-    conn.close()
-    
-    return {
-        "beam": beam,
-        "deliveries": deliveries,
-        "totals": {
-            **totals,
-            "remaining_meters": remaining_meters,
-            "estimated_pieces_remaining": int(estimated_pieces),
-            "meter_usage_percentage": (float(totals['total_meters_used']) / float(beam['total_beam_meters']) * 100) if beam['total_beam_meters'] > 0 else 0
+async def get_beam_details(beam_id: str):
+    try:
+        beam = beams_col.find_one({"_id": ObjectId(beam_id)})
+        if not beam:
+            raise HTTPException(status_code=404, detail="Beam not found")
+        
+        # Get related data
+        workshop = workshops_col.find_one({"_id": beam.get("workshop_id")})
+        customer = customers_col.find_one({"_id": beam.get("customer_id")})
+        machine = machines_col.find_one({"_id": beam.get("machine_id")})
+        
+        beam["workshop_name"] = workshop["name"] if workshop else "N/A"
+        beam["customer_name"] = customer["name"] if customer else "N/A"
+        beam["machine_number"] = machine["machine_number"] if machine else "N/A"
+        
+        # Get deliveries
+        deliveries = list(deliveries_col.find({"beam_id": ObjectId(beam_id)}).sort("delivery_date", -1))
+        
+        # Calculate totals
+        total_good = sum(d.get("good_pieces", 0) for d in deliveries)
+        total_damaged = sum(d.get("damaged_pieces", 0) for d in deliveries)
+        total_meters_used = sum(d.get("meters_used", 0) for d in deliveries)
+        total_amount = sum(d.get("total_amount", 0) for d in deliveries)
+        
+        remaining_meters = beam.get("total_beam_meters", 0) - total_meters_used
+        estimated_pieces = remaining_meters / beam.get("meters_per_piece", 1) if beam.get("meters_per_piece", 0) > 0 else 0
+        
+        return {
+            "beam": serialize_doc(beam),
+            "deliveries": serialize_docs(deliveries),
+            "totals": {
+                "total_good": total_good,
+                "total_damaged": total_damaged,
+                "total_meters_used": total_meters_used,
+                "total_amount": total_amount,
+                "remaining_meters": remaining_meters,
+                "estimated_pieces_remaining": int(estimated_pieces),
+                "meter_usage_percentage": (total_meters_used / beam.get("total_beam_meters", 1) * 100) if beam.get("total_beam_meters", 0) > 0 else 0
+            }
         }
-    }
+    except InvalidId:
+        raise HTTPException(status_code=400, detail="Invalid beam ID")
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
 
 @app.post("/api/beams/start")
 async def start_new_beam(beam: BeamStartCreate, admin: str = Depends(verify_token)):
-    conn = get_db_connection()
-    cursor = conn.cursor()
-    
     try:
-        # Get machine details (workshop_id and fabric_type only)
-        cursor.execute("""
-            SELECT workshop_id, fabric_type 
-            FROM machines WHERE id = %s
-        """, (beam.machine_id,))
-        machine = cursor.fetchone()
-        
+        # Get machine details
+        machine = machines_col.find_one({"_id": ObjectId(beam.machine_id)})
         if not machine:
             raise HTTPException(status_code=404, detail="Machine not found")
         
-        # Check if machine already has an active beam
-        cursor.execute("""
-            SELECT beam_number 
-            FROM beam_starts 
-            WHERE machine_id = %s AND status = 'active'
-        """, (beam.machine_id,))
-        existing_beam = cursor.fetchone()
+        # Check if machine already has active beam
+        existing = beams_col.find_one({"machine_id": ObjectId(beam.machine_id), "status": "active"})
+        if existing:
+            raise HTTPException(status_code=400, detail=f"Machine already has an active beam '{existing['beam_number']}'")
         
-        if existing_beam:
-            raise HTTPException(
-                status_code=400, 
-                detail=f"Machine already has an active beam '{existing_beam[0]}'. Please complete or end the current beam first."
-            )
+        # Check for duplicate beam number
+        if beams_col.find_one({"beam_number": beam.beam_number}):
+            raise HTTPException(status_code=400, detail=f"Duplicate entry '{beam.beam_number}' for beam_number")
         
-        # Insert beam with customer_id from request
-        cursor.execute("""
-            INSERT INTO beam_starts 
-            (beam_number, machine_id, workshop_id, customer_id, fabric_type, 
-             total_beam_meters, meters_per_piece, start_date, status)
-            VALUES (%s, %s, %s, %s, %s, %s, %s, %s, 'active')
-        """, (beam.beam_number, beam.machine_id, machine[0], beam.customer_id, 
-              machine[1], beam.total_beam_meters, beam.meters_per_piece, beam.start_date))
+        # Create beam
+        beam_doc = {
+            "beam_number": beam.beam_number,
+            "machine_id": ObjectId(beam.machine_id),
+            "workshop_id": machine["workshop_id"],
+            "customer_id": ObjectId(beam.customer_id),
+            "fabric_type": machine.get("fabric_type", "veshti"),
+            "total_beam_meters": beam.total_beam_meters,
+            "meters_per_piece": beam.meters_per_piece,
+            "start_date": beam.start_date,
+            "end_date": None,
+            "status": "active",
+            "created_at": datetime.utcnow(),
+            "updated_at": datetime.utcnow()
+        }
         
-        conn.commit()
-        beam_id = cursor.lastrowid
-        
-        cursor.close()
-        conn.close()
-        
-        return {"message": "Beam started successfully", "beam_id": beam_id}
-    
-    except Error as e:
-        conn.rollback()
-        cursor.close()
-        conn.close()
-        
-        # Check for duplicate entry error
-        if e.errno == 1062:  # Duplicate entry error code
-            raise HTTPException(
-                status_code=400, 
-                detail=f"Duplicate entry '{beam.beam_number}' for key 'beam_number'"
-            )
-        else:
-            raise HTTPException(status_code=500, detail=f"Database error: {str(e)}")
+        result = beams_col.insert_one(beam_doc)
+        return {"message": "Beam started successfully", "beam_id": str(result.inserted_id)}
+    except HTTPException:
+        raise
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
 
 @app.post("/api/beams/{beam_id}/end")
-async def end_beam(beam_id: int, admin: str = Depends(verify_token)):
-    """End a beam manually - sets status to completed and records end date"""
-    conn = get_db_connection()
-    cursor = conn.cursor(dictionary=True)
-    
-    # Check if beam exists and is active
-    cursor.execute("SELECT status FROM beam_starts WHERE id = %s", (beam_id,))
-    beam = cursor.fetchone()
-    
-    if not beam:
-        raise HTTPException(status_code=404, detail="Beam not found")
-    
-    if beam['status'] != 'active':
-        raise HTTPException(status_code=400, detail="Beam is already completed")
-    
-    # Update beam status to completed and set end_date
-    cursor.execute("""
-        UPDATE beam_starts 
-        SET status = 'completed', end_date = CURDATE()
-        WHERE id = %s
-    """, (beam_id,))
-    
-    conn.commit()
-    cursor.close()
-    conn.close()
-    
-    return {"message": "Beam ended successfully", "beam_id": beam_id}
-
-@app.delete("/api/beams/{beam_id}")
-async def delete_beam(beam_id: int, admin: str = Depends(verify_token)):
-    """Delete a beam"""
-    conn = get_db_connection()
-    cursor = conn.cursor()
-    
+async def end_beam(beam_id: str, admin: str = Depends(verify_token)):
+    """End a beam manually"""
     try:
-        # Check if beam exists
-        cursor.execute("SELECT id FROM beam_starts WHERE id = %s", (beam_id,))
-        if not cursor.fetchone():
+        beam = beams_col.find_one({"_id": ObjectId(beam_id)})
+        if not beam:
             raise HTTPException(status_code=404, detail="Beam not found")
         
-        # Delete beam
-        cursor.execute("DELETE FROM beam_starts WHERE id = %s", (beam_id,))
-        conn.commit()
+        if beam["status"] != "active":
+            raise HTTPException(status_code=400, detail="Beam is already completed")
         
-        cursor.close()
-        conn.close()
+        beams_col.update_one(
+            {"_id": ObjectId(beam_id)},
+            {"$set": {"status": "completed", "end_date": datetime.now().strftime("%Y-%m-%d"), "updated_at": datetime.utcnow()}}
+        )
+        
+        return {"message": "Beam ended successfully", "beam_id": beam_id}
+    except InvalidId:
+        raise HTTPException(status_code=400, detail="Invalid beam ID")
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+@app.delete("/api/beams/{beam_id}")
+async def delete_beam(beam_id: str, admin: str = Depends(verify_token)):
+    """Delete a beam"""
+    try:
+        result = beams_col.delete_one({"_id": ObjectId(beam_id)})
+        if result.deleted_count == 0:
+            raise HTTPException(status_code=404, detail="Beam not found")
+        
+        # Also delete associated deliveries
+        deliveries_col.delete_many({"beam_id": ObjectId(beam_id)})
         
         return {"message": "Beam deleted successfully"}
-    
-    except HTTPException:
-        cursor.close()
-        conn.close()
-        raise
-    except Error as e:
-        cursor.close()
-        conn.close()
-        raise HTTPException(status_code=500, detail=f"Database error: {str(e)}")
+    except InvalidId:
+        raise HTTPException(status_code=400, detail="Invalid beam ID")
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
 
 # ========================================
 # DELIVERY ENDPOINTS
 # ========================================
 
+@app.post("/api/deliveries")
 @app.post("/api/deliveries/add")
 async def add_delivery(delivery: DeliveryCreate, admin: str = Depends(verify_token)):
-    conn = get_db_connection()
-    cursor = conn.cursor(dictionary=True)
-    
-    # Get beam details
-    cursor.execute("SELECT meters_per_piece FROM beam_starts WHERE id = %s", (delivery.beam_id,))
-    beam = cursor.fetchone()
-    
-    if not beam:
-        raise HTTPException(status_code=404, detail="Beam not found")
-    
-    # Calculate meters used
-    total_pieces = delivery.good_pieces + delivery.damaged_pieces
-    meters_used = total_pieces * float(beam['meters_per_piece'])
-    total_amount = delivery.good_pieces * delivery.price_per_piece
-    
-    # Insert delivery
-    cursor.execute("""
-        INSERT INTO deliveries 
-        (beam_id, delivery_date, design_name, price_per_piece, good_pieces, 
-         damaged_pieces, meters_used, total_amount, notes)
-        VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s)
-    """, (delivery.beam_id, delivery.delivery_date, delivery.design_name, 
-          delivery.price_per_piece, delivery.good_pieces, delivery.damaged_pieces,
-          meters_used, total_amount, delivery.notes))
-    
-    conn.commit()
-    
-    # Auto-archive: Check if beam is complete (remaining meters <= 0)
-    cursor.execute("""
-        SELECT b.total_beam_meters, COALESCE(SUM(d.meters_used), 0) as total_used
-        FROM beam_starts b
-        LEFT JOIN deliveries d ON b.id = d.beam_id
-        WHERE b.id = %s
-        GROUP BY b.id
-    """, (delivery.beam_id,))
-    
-    beam_usage = cursor.fetchone()
-    if beam_usage:
-        remaining = float(beam_usage['total_beam_meters']) - float(beam_usage['total_used'])
+    try:
+        # Check beam exists
+        beam = beams_col.find_one({"_id": ObjectId(delivery.beam_id)})
+        if not beam:
+            raise HTTPException(status_code=404, detail="Beam not found")
         
-        # If beam is complete, auto-archive it
-        if remaining <= 0:
-            cursor.execute("""
-                UPDATE beam_starts 
-                SET status = 'completed', end_date = CURDATE()
-                WHERE id = %s AND status = 'active'
-            """, (delivery.beam_id,))
-            conn.commit()
-    
-    cursor.close()
-    conn.close()
-    
-    return {"message": "Delivery added successfully"}
+        # Calculate values
+        total_pieces = delivery.good_pieces + delivery.damaged_pieces
+        meters_used = total_pieces * beam.get("meters_per_piece", 0)
+        total_amount = delivery.good_pieces * delivery.price_per_piece
+        
+        delivery_doc = {
+            "beam_id": ObjectId(delivery.beam_id),
+            "delivery_date": delivery.delivery_date,
+            "design_name": delivery.design_name,
+            "price_per_piece": delivery.price_per_piece,
+            "good_pieces": delivery.good_pieces,
+            "damaged_pieces": delivery.damaged_pieces,
+            "meters_used": meters_used,
+            "total_amount": total_amount,
+            "notes": delivery.notes,
+            "created_at": datetime.utcnow(),
+            "updated_at": datetime.utcnow()
+        }
+        
+        result = deliveries_col.insert_one(delivery_doc)
+        
+        # Check if beam should be marked as completed
+        total_meters_used = sum(d.get("meters_used", 0) for d in deliveries_col.find({"beam_id": ObjectId(delivery.beam_id)}))
+        if total_meters_used >= beam.get("total_beam_meters", 0):
+            beams_col.update_one(
+                {"_id": ObjectId(delivery.beam_id)},
+                {"$set": {"status": "completed", "end_date": datetime.now().strftime("%Y-%m-%d")}}
+            )
+        
+        return {"message": "Delivery added successfully", "delivery_id": str(result.inserted_id)}
+    except InvalidId:
+        raise HTTPException(status_code=400, detail="Invalid beam ID")
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+@app.delete("/api/deliveries/{delivery_id}")
+async def delete_delivery(delivery_id: str, admin: str = Depends(verify_token)):
+    try:
+        result = deliveries_col.delete_one({"_id": ObjectId(delivery_id)})
+        if result.deleted_count == 0:
+            raise HTTPException(status_code=404, detail="Delivery not found")
+        return {"message": "Delivery deleted successfully"}
+    except InvalidId:
+        raise HTTPException(status_code=400, detail="Invalid delivery ID")
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
 
 # ========================================
 # WORKSHOP ENDPOINTS
@@ -864,104 +794,281 @@ async def add_delivery(delivery: DeliveryCreate, admin: str = Depends(verify_tok
 
 @app.get("/api/workshops")
 async def get_all_workshops():
-    conn = get_db_connection()
-    cursor = conn.cursor(dictionary=True)
-    
-    cursor.execute("""
-        SELECT w.*,
-               (SELECT COUNT(*) FROM machines WHERE workshop_id = w.id) as actual_machine_count
-        FROM workshops w
-        WHERE w.is_active = TRUE
-        ORDER BY w.id
-    """)
-    workshops = cursor.fetchall()
-    
-    cursor.close()
-    conn.close()
-    
-    return {"workshops": workshops}
+    pipeline = [
+        {"$match": {"is_active": {"$ne": False}}},
+        {"$lookup": {
+            "from": "machines",
+            "localField": "_id",
+            "foreignField": "workshop_id",
+            "as": "machines"
+        }},
+        {"$addFields": {
+            "actual_machine_count": {"$size": "$machines"}
+        }},
+        {"$project": {
+            "machines": 0  # Remove the machines array from output
+        }}
+    ]
+    workshops = list(workshops_col.aggregate(pipeline))
+    return {"workshops": serialize_docs(workshops)}
 
 @app.post("/api/workshops")
 async def create_workshop(workshop: WorkshopCreate, admin: str = Depends(verify_token)):
-    conn = get_db_connection()
-    cursor = conn.cursor()
-    
-    cursor.execute("""
-        INSERT INTO workshops (name, location, machine_count, workshop_type)
-        VALUES (%s, %s, %s, %s)
-    """, (workshop.name, workshop.location, workshop.machine_count, workshop.workshop_type))
-    
-    conn.commit()
-    workshop_id = cursor.lastrowid
-    
-    cursor.close()
-    conn.close()
-    
-    return {"message": "Workshop created successfully", "workshop_id": workshop_id}
+    workshop_doc = {
+        "name": workshop.name,
+        "location": workshop.location,
+        "machine_count": workshop.machine_count,
+        "workshop_type": workshop.workshop_type,
+        "is_active": True,
+        "created_at": datetime.utcnow(),
+        "updated_at": datetime.utcnow()
+    }
+    result = workshops_col.insert_one(workshop_doc)
+    return {"message": "Workshop created successfully", "workshop_id": str(result.inserted_id)}
 
 @app.delete("/api/workshops/{workshop_id}")
-async def delete_workshop(workshop_id: int, admin: str = Depends(verify_token)):
-    conn = get_db_connection()
-    cursor = conn.cursor()
-    
-    # Check if workshop has machines
-    cursor.execute("SELECT COUNT(*) as count FROM machines WHERE workshop_id = %s", (workshop_id,))
-    result = cursor.fetchone()
-    
-    if result[0] > 0:
-        raise HTTPException(status_code=400, detail="Cannot delete workshop with existing machines")
-    
-    cursor.execute("UPDATE workshops SET is_active = FALSE WHERE id = %s", (workshop_id,))
-    conn.commit()
-    
-    cursor.close()
-    conn.close()
-    
-    return {"message": "Workshop deleted successfully"}
-
+async def delete_workshop(workshop_id: str, admin: str = Depends(verify_token)):
+    try:
+        # Check for machines
+        if machines_col.count_documents({"workshop_id": ObjectId(workshop_id)}) > 0:
+            raise HTTPException(status_code=400, detail="Cannot delete workshop with existing machines")
+        
+        result = workshops_col.delete_one({"_id": ObjectId(workshop_id)})
+        if result.deleted_count == 0:
+            raise HTTPException(status_code=404, detail="Workshop not found")
+        return {"message": "Workshop deleted successfully"}
+    except InvalidId:
+        raise HTTPException(status_code=400, detail="Invalid workshop ID")
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
 
 @app.get("/api/workshops/{workshop_id}/machines")
-async def get_workshop_machines(workshop_id: int):
-    conn = get_db_connection()
-    cursor = conn.cursor(dictionary=True)
-    
-    cursor.execute("""
-        SELECT 
-            m.id,
-            m.workshop_id,
-            m.machine_number,
-            m.fabric_type,
-            m.is_active,
-            m.created_at,
-            m.updated_at,
-            b.beam_number,
-            b.id as beam_id,
-            b.customer_id,
-            b.total_beam_meters,
-            c.name as customer_name,
-            COALESCE(delivery_stats.meters_used, 0) as meters_used,
-            COALESCE(b.total_beam_meters - delivery_stats.meters_used, b.total_beam_meters, 0) as remaining_meters,
-            COALESCE(delivery_stats.total_damaged, 0) as total_damaged
-        FROM machines m
-        LEFT JOIN beam_starts b ON m.id = b.machine_id AND b.status = 'active'
-        LEFT JOIN customers c ON b.customer_id = c.id
-        LEFT JOIN (
-            SELECT 
-                beam_id,
-                SUM(meters_used) as meters_used,
-                SUM(damaged_pieces) as total_damaged
-            FROM deliveries
-            GROUP BY beam_id
-        ) delivery_stats ON b.id = delivery_stats.beam_id
-        WHERE m.workshop_id = %s AND m.is_active = TRUE
-        ORDER BY m.machine_number
-    """, (workshop_id,))
-    machines = cursor.fetchall()
-    
-    cursor.close()
-    conn.close()
-    
-    return {"machines": machines}
+async def get_workshop_machines(workshop_id: str):
+    try:
+        pipeline = [
+            {"$match": {"workshop_id": ObjectId(workshop_id), "is_active": {"$ne": False}}},
+            # Lookup active beams only
+            {"$lookup": {
+                "from": "beams",
+                "let": {"machine_id": "$_id"},
+                "pipeline": [
+                    {"$match": {
+                        "$expr": {"$eq": ["$machine_id", "$$machine_id"]},
+                        "status": "active"
+                    }}
+                ],
+                "as": "active_beams"
+            }},
+            # Get the first active beam (there should only be one)
+            {"$addFields": {
+                "active_beam": {"$arrayElemAt": ["$active_beams", 0]}
+            }},
+            # Lookup customer for the active beam
+            {"$lookup": {
+                "from": "customers",
+                "localField": "active_beam.customer_id",
+                "foreignField": "_id",
+                "as": "customer"
+            }},
+            {"$addFields": {
+                "customer": {"$arrayElemAt": ["$customer", 0]}
+            }},
+            # Lookup deliveries for the active beam
+            {"$lookup": {
+                "from": "deliveries",
+                "localField": "active_beam._id",
+                "foreignField": "beam_id",
+                "as": "deliveries"
+            }},
+            # Calculate totals
+            {"$addFields": {
+                "meters_used": {"$sum": "$deliveries.meters_used"},
+                "total_damaged": {"$sum": "$deliveries.damaged_pieces"},
+                "total_good": {"$sum": "$deliveries.good_pieces"}
+            }},
+            # Project final fields
+            {"$project": {
+                "machine_number": 1,
+                "fabric_type": {"$ifNull": ["$active_beam.fabric_type", "$fabric_type"]},
+                "is_active": 1,
+                "beam_id": "$active_beam._id",
+                "beam_number": "$active_beam.beam_number",
+                "customer_name": "$customer.name",
+                "total_beam_meters": "$active_beam.total_beam_meters",
+                "meters_used": 1,
+                "remaining_meters": {
+                    "$cond": {
+                        "if": "$active_beam",
+                        "then": {"$subtract": ["$active_beam.total_beam_meters", "$meters_used"]},
+                        "else": 0
+                    }
+                },
+                "total_damaged": 1,
+                "total_good": 1
+            }},
+            {"$sort": {"machine_number": 1}}
+        ]
+        machines = list(machines_col.aggregate(pipeline))
+        return {"machines": [serialize_doc(m) for m in machines]}
+    except InvalidId:
+        raise HTTPException(status_code=400, detail="Invalid workshop ID")
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+# ========================================
+# MACHINE ENDPOINTS
+# ========================================
+
+@app.get("/api/machines/all")
+async def get_all_machines():
+    pipeline = [
+        {"$match": {"is_active": {"$ne": False}}},
+        {"$lookup": {"from": "workshops", "localField": "workshop_id", "foreignField": "_id", "as": "workshop"}},
+        {"$unwind": {"path": "$workshop", "preserveNullAndEmptyArrays": True}},
+        {"$project": {
+            "machine_number": 1,
+            "fabric_type": 1,
+            "workshop_id": 1,
+            "workshop_name": "$workshop.name",
+            "is_active": 1
+        }},
+        {"$sort": {"workshop_name": 1, "machine_number": 1}}
+    ]
+    machines = list(machines_col.aggregate(pipeline))
+    return {"machines": [serialize_doc(m) for m in machines]}
+
+@app.post("/api/machines")
+async def create_machine(machine: MachineCreate, admin: str = Depends(verify_token)):
+    try:
+        # Check if machine number already exists in workshop
+        existing = machines_col.find_one({
+            "workshop_id": ObjectId(machine.workshop_id),
+            "machine_number": machine.machine_number
+        })
+        if existing:
+            raise HTTPException(status_code=400, detail="Machine number already exists in this workshop")
+        
+        machine_doc = {
+            "workshop_id": ObjectId(machine.workshop_id),
+            "machine_number": machine.machine_number,
+            "fabric_type": machine.fabric_type,
+            "is_active": True,
+            "created_at": datetime.utcnow(),
+            "updated_at": datetime.utcnow()
+        }
+        result = machines_col.insert_one(machine_doc)
+        return {"message": "Machine created successfully", "machine_id": str(result.inserted_id)}
+    except InvalidId:
+        raise HTTPException(status_code=400, detail="Invalid workshop ID")
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+@app.get("/api/workshops/{workshop_id}/machines")
+async def get_workshop_machines(workshop_id: str):
+    """Get all machines for a workshop with their active beam information"""
+    try:
+        # Aggregation pipeline to join machines with their active beams
+        pipeline = [
+            {"$match": {"workshop_id": ObjectId(workshop_id), "is_active": {"$ne": False}}},
+            {"$lookup": {
+                "from": "beams",
+                "let": {"machine_id": "$_id"},
+                "pipeline": [
+                    {"$match": {
+                        "$expr": {"$eq": ["$machine_id", "$$machine_id"]},
+                        "status": "active"
+                    }}
+                ],
+                "as": "active_beam"
+            }},
+            {"$unwind": {
+                "path": "$active_beam",
+                "preserveNullAndEmptyArrays": True
+            }},
+            {"$lookup": {
+                "from": "customers",
+                "localField": "active_beam.customer_id",
+                "foreignField": "_id",
+                "as": "customer"
+            }},
+            {"$unwind": {
+                "path": "$customer",
+                "preserveNullAndEmptyArrays": True
+            }},
+            {"$lookup": {
+                "from": "deliveries",
+                "let": {"beam_id": "$active_beam._id"},
+                "pipeline": [
+                    {"$match": {"$expr": {"$eq": ["$beam_id", "$$beam_id"]}}},
+                    {"$group": {
+                        "_id": None,
+                        "total_good": {"$sum": "$good_pieces"},
+                        "total_damaged": {"$sum": "$damaged_pieces"}
+                    }}
+                ],
+                "as": "delivery_stats"
+            }},
+            {"$addFields": {
+                "beam_id": {"$ifNull": ["$active_beam._id", None]},
+                "beam_number": {"$ifNull": ["$active_beam.beam_number", None]},
+                "customer_name": {"$ifNull": ["$customer.name", None]},
+                "total_beam_meters": {"$ifNull": ["$active_beam.total_beam_meters", None]},
+                "meters_per_piece": {"$ifNull": ["$active_beam.meters_per_piece", None]},
+                "total_good": {"$ifNull": [{"$arrayElemAt": ["$delivery_stats.total_good", 0]}, 0]},
+                "total_damaged": {"$ifNull": [{"$arrayElemAt": ["$delivery_stats.total_damaged", 0]}, 0]},
+            }},
+            {"$addFields": {
+                "total_production": {"$add": ["$total_good", "$total_damaged"]},
+                "meters_used": {
+                    "$cond": {
+                        "if": {"$gt": ["$meters_per_piece", 0]},
+                        "then": {"$multiply": [
+                            {"$add": ["$total_good", "$total_damaged"]},
+                            "$meters_per_piece"
+                        ]},
+                        "else": 0
+                    }
+                }
+            }},
+            {"$addFields": {
+                "remaining_meters": {
+                    "$cond": {
+                        "if": {"$gt": ["$total_beam_meters", 0]},
+                        "then": {"$subtract": ["$total_beam_meters", "$meters_used"]},
+                        "else": 0
+                    }
+                }
+            }},
+            {"$project": {
+                "active_beam": 0,
+                "customer": 0,
+                "delivery_stats": 0
+            }}
+        ]
+        
+        machines = list(machines_col.aggregate(pipeline))
+        return {"machines": serialize_docs(machines)}
+    except InvalidId:
+        raise HTTPException(status_code=400, detail="Invalid workshop ID")
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@app.delete("/api/machines/{machine_id}")
+async def delete_machine(machine_id: str, admin: str = Depends(verify_token)):
+    try:
+        # Check for active beams
+        if beams_col.count_documents({"machine_id": ObjectId(machine_id), "status": "active"}) > 0:
+            raise HTTPException(status_code=400, detail="Cannot delete machine with active beams")
+        
+        result = machines_col.delete_one({"_id": ObjectId(machine_id)})
+        if result.deleted_count == 0:
+            raise HTTPException(status_code=404, detail="Machine not found")
+        return {"message": "Machine deleted successfully"}
+    except InvalidId:
+        raise HTTPException(status_code=400, detail="Invalid machine ID")
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
 
 # ========================================
 # CUSTOMER ENDPOINTS
@@ -969,341 +1076,117 @@ async def get_workshop_machines(workshop_id: int):
 
 @app.get("/api/customers")
 async def get_all_customers():
-    conn = get_db_connection()
-    cursor = conn.cursor(dictionary=True)
-    
-    # Check if status column exists
-    cursor.execute("""
-        SELECT COUNT(*) as count
-        FROM information_schema.COLUMNS 
-        WHERE TABLE_SCHEMA = DATABASE() 
-        AND TABLE_NAME = 'customers' 
-        AND COLUMN_NAME = 'status'
-    """)
-    has_status = cursor.fetchone()['count'] > 0
-    
-    # Query with or without status based on column existence
-    if has_status:
-        cursor.execute("""
-            SELECT id, name, contact_person, phone, email, address, status
-            FROM customers 
-            WHERE is_active = TRUE 
-            ORDER BY name
-        """)
-    else:
-        cursor.execute("""
-            SELECT id, name, contact_person, phone, email, address,
-                   'active' as status
-            FROM customers 
-            WHERE is_active = TRUE 
-            ORDER BY name
-        """)
-    
-    customers = cursor.fetchall()
-    
-    cursor.close()
-    conn.close()
-    
-    return {"customers": customers}
+    customers = list(customers_col.find({"is_active": {"$ne": False}}))
+    return {"customers": serialize_docs(customers)}
 
 @app.post("/api/customers")
 async def create_customer(customer: CustomerCreate, admin: str = Depends(verify_token)):
-    conn = get_db_connection()
-    cursor = conn.cursor()
+    # Check duplicate name
+    if customers_col.find_one({"name": customer.name}):
+        raise HTTPException(status_code=400, detail="Customer with this name already exists")
     
-    cursor.execute("""
-        INSERT INTO customers (name, contact_person, phone, email, address)
-        VALUES (%s, %s, %s, %s, %s)
-    """, (customer.name, customer.contact_person, customer.phone, customer.email, customer.address))
-    
-    conn.commit()
-    customer_id = cursor.lastrowid
-    
-    cursor.close()
-    conn.close()
-    
-    return {"message": "Customer created", "customer_id": customer_id}
-
-@app.delete("/api/customers/{customer_id}")
-async def delete_customer(customer_id: int, admin: str = Depends(verify_token)):
-    conn = get_db_connection()
-    cursor = conn.cursor()
-    
-    # Check if customer has beams
-    cursor.execute("SELECT COUNT(*) as count FROM beam_starts WHERE customer_id = %s", (customer_id,))
-    result = cursor.fetchone()
-    
-    if result[0] > 0:
-        raise HTTPException(status_code=400, detail="Cannot delete customer with existing beams")
-    
-    cursor.execute("UPDATE customers SET is_active = FALSE WHERE id = %s", (customer_id,))
-    conn.commit()
-    
-    cursor.close()
-    conn.close()
-    
-    return {"message": "Customer deleted"}
+    customer_doc = {
+        "name": customer.name,
+        "contact_person": customer.contact_person,
+        "phone": customer.phone,
+        "email": customer.email,
+        "address": customer.address,
+        "is_active": True,
+        "created_at": datetime.utcnow(),
+        "updated_at": datetime.utcnow()
+    }
+    result = customers_col.insert_one(customer_doc)
+    return {"message": "Customer created successfully", "customer_id": str(result.inserted_id)}
 
 @app.put("/api/customers/{customer_id}/status")
-async def update_customer_status(customer_id: int, request: dict, admin: str = Depends(verify_token)):
-    """Update customer status (active/inactive)"""
-    conn = get_db_connection()
-    cursor = conn.cursor()
-    
+async def toggle_customer_status(customer_id: str, status: dict, admin: str = Depends(verify_token)):
+    """Toggle customer active/inactive status"""
     try:
-        status = request.get('status')
+        new_status = status.get("status")
+        if new_status not in ["active", "inactive"]:
+            raise HTTPException(status_code=400, detail="Status must be 'active' or 'inactive'")
         
-        # Validate status
-        if status not in ['active', 'inactive']:
-            raise HTTPException(status_code=400, detail="Invalid status. Must be 'active' or 'inactive'")
-        
-        # Update customer status
-        cursor.execute("""
-            UPDATE customers 
-            SET status = %s 
-            WHERE id = %s
-        """, (status, customer_id))
-        
-        conn.commit()
-        
-        cursor.close()
-        conn.close()
-        
-        return {"message": "Customer status updated successfully", "status": status}
-    
-    except HTTPException:
-        cursor.close()
-        conn.close()
-        raise
-    except Error as e:
-        cursor.close()
-        conn.close()
-        raise HTTPException(status_code=500, detail=f"Database error: {str(e)}")
-
-
-# ========================================
-# MACHINE MANAGEMENT ENDPOINTS
-# ========================================
-
-class MachineCreate(BaseModel):
-    workshop_id: int
-    machine_number: int
-    fabric_type: str
-
-@app.get("/api/machines/all")
-async def get_all_machines():
-    conn = get_db_connection()
-    cursor = conn.cursor(dictionary=True)
-    
-    cursor.execute("""
-        SELECT m.*, 
-               w.name as workshop_name
-        FROM machines m
-        JOIN workshops w ON m.workshop_id = w.id
-        ORDER BY w.id, m.machine_number
-    """)
-    machines = cursor.fetchall()
-    
-    cursor.close()
-    conn.close()
-    
-    return {"machines": machines}
-
-@app.post("/api/machines")
-async def create_machine(machine: MachineCreate, admin: str = Depends(verify_token)):
-    conn = get_db_connection()
-    cursor = conn.cursor()
-    
-    try:
-        # Check if machine number already exists in this workshop
-        cursor.execute("""
-            SELECT machine_number 
-            FROM machines 
-            WHERE workshop_id = %s AND machine_number = %s
-        """, (machine.workshop_id, machine.machine_number))
-        existing_machine = cursor.fetchone()
-        
-        if existing_machine:
-            raise HTTPException(
-                status_code=400, 
-                detail=f"Machine {machine.machine_number} already exists in this workshop. Please use a different machine number."
-            )
-        
-        cursor.execute("""
-            INSERT INTO machines (workshop_id, machine_number, fabric_type)
-            VALUES (%s, %s, %s)
-        """, (machine.workshop_id, machine.machine_number, machine.fabric_type))
-        
-        conn.commit()
-        machine_id = cursor.lastrowid
-        
-        cursor.close()
-        conn.close()
-        
-        return {"message": "Machine created successfully", "machine_id": machine_id}
-    except HTTPException:
-        cursor.close()
-        conn.close()
-        raise
-    except Error as e:
-        cursor.close()
-        conn.close()
-        raise HTTPException(status_code=400, detail=f"Failed to create machine: {str(e)}")
-
-@app.delete("/api/machines/{machine_id}")
-async def delete_machine(machine_id: int, admin: str = Depends(verify_token)):
-    conn = get_db_connection()
-    cursor = conn.cursor()
-    
-    # Check if machine has active beams
-    cursor.execute("""
-        SELECT COUNT(*) as count FROM beam_starts 
-        WHERE machine_id = %s AND status = 'active'
-    """, (machine_id,))
-    active_beams = cursor.fetchone()[0]
-    
-    if active_beams > 0:
-        raise HTTPException(
-            status_code=400, 
-            detail="Cannot delete machine with active beams. Complete or reassign beams first."
+        is_active = new_status == "active"
+        result = customers_col.update_one(
+            {"_id": ObjectId(customer_id)},
+            {"$set": {"is_active": is_active, "status": new_status, "updated_at": datetime.utcnow()}}
         )
-    
-    cursor.execute("DELETE FROM machines WHERE id = %s", (machine_id,))
-    conn.commit()
-    
-    cursor.close()
-    conn.close()
-    
-    return {"message": "Machine deleted successfully"}
+        
+        if result.matched_count == 0:
+            raise HTTPException(status_code=404, detail="Customer not found")
+        
+        return {"message": f"Customer status updated to {new_status}"}
+    except InvalidId:
+        raise HTTPException(status_code=400, detail="Invalid customer ID")
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
 
 
+@app.delete("/api/customers/{customer_id}")
+async def delete_customer(customer_id: str, admin: str = Depends(verify_token)):
+    try:
+        result = customers_col.delete_one({"_id": ObjectId(customer_id)})
+        if result.deleted_count == 0:
+            raise HTTPException(status_code=404, detail="Customer not found")
+        return {"message": "Customer deleted successfully"}
+    except InvalidId:
+        raise HTTPException(status_code=400, detail="Invalid customer ID")
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
 
 # ========================================
-# DESIGN PRESETS
+# DESIGN PRESETS ENDPOINTS
 # ========================================
 
 @app.get("/api/design-presets")
 async def get_design_presets():
-    conn = get_db_connection()
-    cursor = conn.cursor(dictionary=True)
-    
-    cursor.execute("SELECT * FROM design_presets WHERE is_active = TRUE ORDER BY price")
-    presets = cursor.fetchall()
-    
-    cursor.close()
-    conn.close()
-    
-    return {"presets": presets}
+    presets = list(design_presets_col.find({"is_active": {"$ne": False}}))
+    return {"presets": serialize_docs(presets)}
 
 @app.post("/api/design-presets")
 async def create_design_preset(preset: DesignPresetCreate, admin: str = Depends(verify_token)):
-    conn = get_db_connection()
-    cursor = conn.cursor()
-    
-    cursor.execute("""
-        INSERT INTO design_presets (price, label)
-        VALUES (%s, %s)
-    """, (preset.price, preset.label))
-    
-    conn.commit()
-    preset_id = cursor.lastrowid
-    
-    cursor.close()
-    conn.close()
-    
-    return {"message": "Design preset created successfully", "preset_id": preset_id}
+    preset_doc = {
+        "price": preset.price,
+        "label": preset.label,
+        "is_active": True,
+        "created_at": datetime.utcnow()
+    }
+    result = design_presets_col.insert_one(preset_doc)
+    return {"message": "Design preset created successfully", "preset_id": str(result.inserted_id)}
 
 @app.delete("/api/design-presets/{preset_id}")
-async def delete_design_preset(preset_id: int, admin: str = Depends(verify_token)):
-    conn = get_db_connection()
-    cursor = conn.cursor()
-    
-    cursor.execute("UPDATE design_presets SET is_active = FALSE WHERE id = %s", (preset_id,))
-    conn.commit()
-    
-    cursor.close()
-    conn.close()
-    
-    return {"message": "Design preset deleted successfully"}
-
+async def delete_design_preset(preset_id: str, admin: str = Depends(verify_token)):
+    try:
+        result = design_presets_col.delete_one({"_id": ObjectId(preset_id)})
+        if result.deleted_count == 0:
+            raise HTTPException(status_code=404, detail="Design preset not found")
+        return {"message": "Design preset deleted successfully"}
+    except InvalidId:
+        raise HTTPException(status_code=400, detail="Invalid preset ID")
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
 
 # ========================================
-# REPORTS
+# STARTUP - Create Admin User if not exists
 # ========================================
 
-@app.get("/api/reports/beam-details")
-async def get_beam_report(start_date: str, end_date: str):
-    conn = get_db_connection()
-    cursor = conn.cursor(dictionary=True)
-    
-    cursor.execute("""
-        SELECT b.beam_number, b.start_date, b.end_date, b.status,
-               m.machine_number,
-               w.name as workshop, c.name as customer,
-               b.fabric_type, b.total_beam_meters,
-               COALESCE(SUM(d.good_pieces), 0) as total_pieces,
-               COALESCE(SUM(d.damaged_pieces), 0) as total_damaged,
-               COALESCE(SUM(d.total_amount), 0) as total_amount
-        FROM beam_starts b
-        LEFT JOIN machines m ON b.machine_id = m.id
-        JOIN workshops w ON b.workshop_id = w.id
-        JOIN customers c ON b.customer_id = c.id
-        LEFT JOIN deliveries d ON b.id = d.beam_id
-        WHERE b.start_date BETWEEN %s AND %s
-        GROUP BY b.id
-        ORDER BY b.start_date DESC
-    """, (start_date, end_date))
-    
-    beams = cursor.fetchall()
-    
-    cursor.close()
-    conn.close()
-    
-    return {"beams": beams}
+@app.on_event("startup")
+async def startup_event():
+    """Create default admin user if it doesn't exist"""
+    if admin_users_col.count_documents({"username": "admin"}) == 0:
+        hashed = bcrypt.hashpw("admin123".encode(), bcrypt.gensalt())
+        admin_users_col.insert_one({
+            "username": "admin",
+            "password_hash": hashed.decode(),
+            "email": "admin@powerloom.com",
+            "is_active": True,
+            "created_at": datetime.utcnow()
+        })
+        print("Created default admin user: admin/admin123")
 
-
-@app.get("/api/reports/delivery-details")
-async def get_delivery_report(start_date: str, end_date: str, workshop_id: int = None):
-    conn = get_db_connection()
-    cursor = conn.cursor(dictionary=True)
-    
-    workshop_filter = "AND w.id = %s" if workshop_id else ""
-    params = [start_date, end_date]
-    if workshop_id:
-        params.append(workshop_id)
-    
-    cursor.execute(f"""
-        SELECT d.id, d.delivery_date, d.design_name,
-               d.good_pieces, d.damaged_pieces, d.meters_used,
-               d.price_per_piece, d.total_amount,
-               b.beam_number, b.fabric_type,
-               m.machine_number,
-               w.name as workshop, c.name as customer
-        FROM deliveries d
-        JOIN beam_starts b ON d.beam_id = b.id
-        LEFT JOIN machines m ON b.machine_id = m.id
-        JOIN workshops w ON b.workshop_id = w.id
-        JOIN customers c ON b.customer_id = c.id
-        WHERE d.delivery_date BETWEEN %s AND %s
-        {workshop_filter}
-        ORDER BY d.delivery_date DESC
-    """, tuple(params))
-    
-    deliveries = cursor.fetchall()
-    
-    # Convert decimal types
-    for delivery in deliveries:
-        for key, value in delivery.items():
-            if isinstance(value, Decimal):
-                delivery[key] = float(value)
-            elif hasattr(value, 'isoformat'):
-                delivery[key] = value.isoformat()
-    
-    cursor.close()
-    conn.close()
-    
-    return {"deliveries": deliveries}
-
+# ========================================
+# RUN SERVER
+# ========================================
 
 if __name__ == "__main__":
     import uvicorn

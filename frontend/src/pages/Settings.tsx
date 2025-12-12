@@ -166,25 +166,42 @@ const Settings = () => {
       {/* Reset Confirmation Modal */}
       <div id="reset-modal" className="hidden fixed inset-0 z-50 flex items-center justify-center p-4">
         {/* Backdrop */}
-        <div className="fixed inset-0 bg-black/50" onClick={() => {
+        <div className="fixed inset-0 bg-black/60" onClick={() => {
           document.getElementById('reset-modal')?.classList.add('hidden');
+          setError('');
         }}></div>
 
         {/* Modal Content */}
-        <div className="relative bg-white rounded-xl p-5 max-w-sm w-full mx-4 shadow-2xl">
+        <div className="relative bg-white dark:bg-gray-800 rounded-xl p-5 max-w-sm w-full mx-4 shadow-2xl border border-gray-200 dark:border-gray-700">
           <div className="flex items-center space-x-3 mb-4">
-            <div className="w-10 h-10 bg-red-100 rounded-lg flex items-center justify-center flex-shrink-0">
-              <AlertCircle className="w-5 h-5 text-red-600" />
+            <div className="w-10 h-10 bg-red-100 dark:bg-red-900/40 rounded-lg flex items-center justify-center flex-shrink-0">
+              <AlertCircle className="w-5 h-5 text-red-600 dark:text-red-400" />
             </div>
             <div>
-              <h3 className="text-lg font-bold text-gray-900">Confirm Database Reset</h3>
-              <p className="text-xs text-gray-600">Enter admin password to proceed</p>
+              <h3 className="text-lg font-bold text-gray-900 dark:text-white">Confirm Database Reset</h3>
+              <p className="text-xs text-gray-600 dark:text-gray-400">Enter admin password to proceed</p>
             </div>
           </div>
 
-          <div className="bg-red-50 border border-red-200 rounded-lg p-3 mb-4">
-            <p className="text-xs text-red-800 font-semibold">This will delete ALL data permanently!</p>
+          <div className="bg-red-50 dark:bg-red-900/30 border border-red-200 dark:border-red-700 rounded-lg p-3 mb-4">
+            <p className="text-xs text-red-800 dark:text-red-300 font-semibold">This will delete ALL data permanently!</p>
           </div>
+
+          {/* Error message in modal */}
+          {error && (
+            <div className="bg-red-50 dark:bg-red-900/30 border border-red-300 dark:border-red-700 rounded-lg p-3 mb-4 flex items-center space-x-2">
+              <AlertCircle className="w-4 h-4 text-red-600 dark:text-red-400 flex-shrink-0" />
+              <p className="text-xs text-red-700 dark:text-red-300">{error}</p>
+            </div>
+          )}
+
+          {/* Success message in modal */}
+          {success && (
+            <div className="bg-green-50 dark:bg-green-900/30 border border-green-300 dark:border-green-700 rounded-lg p-3 mb-4 flex items-center space-x-2">
+              <CheckCircle className="w-4 h-4 text-green-600 dark:text-green-400 flex-shrink-0" />
+              <p className="text-xs text-green-700 dark:text-green-300">{success}</p>
+            </div>
+          )}
 
           <form onSubmit={async (e) => {
             e.preventDefault();
@@ -193,13 +210,14 @@ const Settings = () => {
             try {
               setLoading(true);
               setError('');
+              setSuccess('');
 
               // Call reset API
-              const response = await fetch(`${import.meta.env.VITE_API_URL}/api/admin/reset-database`, {
+              const response = await fetch(`${import.meta.env.VITE_API_URL}/admin/reset-database`, {
                 method: 'POST',
                 headers: {
                   'Content-Type': 'application/json',
-                  'Authorization': `Bearer ${localStorage.getItem('token')}`
+                  'Authorization': `Bearer ${localStorage.getItem('admin_token')}`
                 },
                 body: JSON.stringify({ admin_password: password })
               });
@@ -210,9 +228,14 @@ const Settings = () => {
               }
 
               setSuccess('Database reset successfully! All data has been deleted.');
-              const modal = document.getElementById('reset-modal');
-              if (modal) modal.classList.add('hidden');
               (document.getElementById('reset-password') as HTMLInputElement).value = '';
+
+              // Auto close after 2 seconds on success
+              setTimeout(() => {
+                const modal = document.getElementById('reset-modal');
+                if (modal) modal.classList.add('hidden');
+                setSuccess('');
+              }, 2000);
             } catch (err: any) {
               setError(err.message || 'Failed to reset database');
             } finally {
@@ -220,13 +243,13 @@ const Settings = () => {
             }
           }} className="space-y-3">
             <div>
-              <label className="block text-xs font-medium text-gray-700 mb-1">
+              <label className="block text-xs font-medium text-gray-700 dark:text-gray-300 mb-1">
                 Admin Password <span className="text-red-500">*</span>
               </label>
               <input
                 id="reset-password"
                 type="password"
-                className="w-full px-3 py-2 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-red-500 focus:border-transparent outline-none"
+                className="w-full px-3 py-2 text-sm border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-red-500 focus:border-transparent outline-none"
                 placeholder="Enter admin password"
                 required
               />
@@ -239,8 +262,10 @@ const Settings = () => {
                   const modal = document.getElementById('reset-modal');
                   if (modal) modal.classList.add('hidden');
                   (document.getElementById('reset-password') as HTMLInputElement).value = '';
+                  setError('');
+                  setSuccess('');
                 }}
-                className="flex-1 px-4 py-2 text-sm border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition font-semibold"
+                className="flex-1 px-4 py-2 text-sm border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 transition font-semibold"
               >
                 Cancel
               </button>

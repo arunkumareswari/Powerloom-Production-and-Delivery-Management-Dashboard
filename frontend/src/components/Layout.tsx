@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { Outlet, Link, useLocation } from 'react-router-dom';
+import { Outlet, Link, useLocation, useNavigate } from 'react-router-dom';
 import { LayoutDashboard, Factory, FileText, Settings, LogOut, Lock, Plus, Package, Sliders, Menu, X, Moon, Sun } from 'lucide-react';
 import { useTheme } from '../context/ThemeContext';
 
@@ -10,8 +10,14 @@ interface LayoutProps {
 
 const Layout = ({ isAdmin, onLogout }: LayoutProps) => {
   const location = useLocation();
+  const navigate = useNavigate();
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const { theme, toggleTheme } = useTheme();
+
+  const handleLogout = () => {
+    onLogout();
+    navigate('/'); // Navigate to dashboard after logout
+  };
 
   const isActive = (path: string) => {
     return location.pathname === path
@@ -64,7 +70,7 @@ const Layout = ({ isAdmin, onLogout }: LayoutProps) => {
                     Admin Mode
                   </span>
                   <button
-                    onClick={onLogout}
+                    onClick={handleLogout}
                     className="flex items-center space-x-1 md:space-x-2 px-2 md:px-4 py-2 text-xs md:text-sm text-red-600 hover:bg-red-50 rounded-xl transition"
                   >
                     <LogOut className="w-4 h-4" />

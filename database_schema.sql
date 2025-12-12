@@ -33,7 +33,7 @@ CREATE TABLE workshops (
     name VARCHAR(100) NOT NULL,
     location VARCHAR(200),
     machine_count INT NOT NULL,
-    workshop_type ENUM('vesti', 'saree', 'mixed') NOT NULL,
+    workshop_type ENUM('veshti', 'saree', 'mixed') NOT NULL,
     is_active BOOLEAN DEFAULT TRUE,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
@@ -44,7 +44,7 @@ CREATE TABLE machines (
     id INT AUTO_INCREMENT PRIMARY KEY,
     workshop_id INT NOT NULL,
     machine_number INT NOT NULL,
-    fabric_type ENUM('vesti', 'saree') NOT NULL,
+    fabric_type ENUM('veshti', 'saree') NOT NULL,
     is_active BOOLEAN DEFAULT TRUE,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
@@ -68,7 +68,7 @@ CREATE TABLE beam_starts (
     machine_id INT NOT NULL,
     workshop_id INT NOT NULL,
     customer_id INT NOT NULL,
-    fabric_type ENUM('vesti', 'saree') NOT NULL,
+    fabric_type ENUM('veshti', 'saree') NOT NULL,
     total_beam_meters DECIMAL(10, 2) NOT NULL,
     meters_per_piece DECIMAL(10, 2) NOT NULL,
     start_date DATE NOT NULL,
@@ -120,22 +120,22 @@ INSERT INTO customers (name, contact_person, phone) VALUES
 ('Customer C', 'Selvam', '9876543212');
 
 INSERT INTO workshops (name, location, machine_count, workshop_type) VALUES 
-('Workshop 1', 'Location 1', 3, 'vesti'),
-('Workshop 2', 'Location 2', 4, 'vesti'),
+('Workshop 1', 'Location 1', 3, 'veshti'),
+('Workshop 2', 'Location 2', 4, 'veshti'),
 ('Workshop 3', 'Location 3', 3, 'saree');
 
--- Workshop 1 - 3 Vesti Machines
+-- Workshop 1 - 3 Veshti Machines
 INSERT INTO machines (workshop_id, machine_number, fabric_type) VALUES 
-(1, 1, 'vesti'),
-(1, 2, 'vesti'),
-(1, 3, 'vesti');
+(1, 1, 'veshti'),
+(1, 2, 'veshti'),
+(1, 3, 'veshti');
 
--- Workshop 2 - 4 Vesti Machines
+-- Workshop 2 - 4 Veshti Machines
 INSERT INTO machines (workshop_id, machine_number, fabric_type) VALUES 
-(2, 1, 'vesti'),
-(2, 2, 'vesti'),
-(2, 3, 'vesti'),
-(2, 4, 'vesti');
+(2, 1, 'veshti'),
+(2, 2, 'veshti'),
+(2, 3, 'veshti'),
+(2, 4, 'veshti');
 
 -- Workshop 3 - 3 Saree Machines
 INSERT INTO machines (workshop_id, machine_number, fabric_type) VALUES 

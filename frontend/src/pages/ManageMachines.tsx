@@ -15,7 +15,7 @@ const ManageMachines = () => {
   const [formData, setFormData] = useState({
     workshop_id: '',
     machine_number: '',
-    fabric_type: 'vesti',
+    fabric_type: 'veshti',
   });
 
   useEffect(() => {
@@ -58,7 +58,7 @@ const ManageMachines = () => {
       setFormData({
         workshop_id: '',
         machine_number: '',
-        fabric_type: 'vesti',
+        fabric_type: 'veshti',
       });
       fetchAllMachines();
     } catch (err: any) {
@@ -163,7 +163,7 @@ const ManageMachines = () => {
                 className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-primary-500 focus:border-transparent outline-none"
                 required
               >
-                <option value="vesti">Veshti</option>
+                <option value="veshti">Veshti</option>
                 <option value="saree">Saree</option>
               </select>
             </div>

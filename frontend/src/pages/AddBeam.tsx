@@ -52,7 +52,7 @@ const AddBeam = () => {
 
     if (workshopId) {
       try {
-        const response = await workshopAPI.getMachines(parseInt(workshopId));
+        const response = await workshopAPI.getMachines(workshopId);  // Use string ID for MongoDB
         setMachines(response.data.machines);
       } catch (error) {
         console.error('Error fetching machines:', error);
@@ -68,8 +68,8 @@ const AddBeam = () => {
     try {
       await beamAPI.startBeam({
         ...formData,
-        customer_id: parseInt(formData.customer_id),
-        machine_id: parseInt(formData.machine_id),
+        customer_id: formData.customer_id,  // Keep as string for MongoDB ObjectId
+        machine_id: formData.machine_id,  // Keep as string for MongoDB ObjectId
         total_beam_meters: parseFloat(formData.total_beam_meters),
         meters_per_piece: parseFloat(formData.meters_per_piece),
       });

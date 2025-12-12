@@ -112,7 +112,7 @@ const Dashboard = () => {
             className="px-3 py-2 text-sm border border-gray-300 dark:border-gray-600 rounded-xl bg-white dark:bg-gray-800 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-primary-500"
           >
             <option value="all"> All Product</option>
-            <option value="vesti">Veshti</option>
+            <option value="veshti">Veshti</option>
             <option value="saree">Saree</option>
           </select>
         </div>

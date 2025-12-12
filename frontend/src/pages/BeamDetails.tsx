@@ -23,11 +23,11 @@ const BeamDetails = ({ isAdmin }: { isAdmin: boolean }) => {
 
   useEffect(() => {
     if (beamId) {
-      fetchBeamDetails(parseInt(beamId));
+      fetchBeamDetails(beamId);
     }
   }, [beamId]);
 
-  const fetchBeamDetails = async (id: number) => {
+  const fetchBeamDetails = async (id: string) => {
     try {
       const response = await beamAPI.getById(id);
       setData(response.data);
@@ -66,6 +66,25 @@ const BeamDetails = ({ isAdmin }: { isAdmin: boolean }) => {
           navigate(isCompleted ? '/workshops?view=archive' : '/workshops');
         } catch (error: any) {
           alert(error.response?.data?.detail || 'Failed to delete beam');
+        }
+      }
+    });
+  };
+
+  const handleDeleteDelivery = (deliveryId: string, deliveryNumber: number) => {
+    setConfirmModal({
+      isOpen: true,
+      title: 'Delete Delivery',
+      message: `Are you sure you want to delete Delivery #${deliveryNumber}? This action cannot be undone.`,
+      onConfirm: async () => {
+        try {
+          await api.delete(`/deliveries/${deliveryId}`);
+          // Refresh beam details after deletion
+          if (beamId) {
+            fetchBeamDetails(beamId);
+          }
+        } catch (error: any) {
+          alert(error.response?.data?.detail || 'Failed to delete delivery');
         }
       }
     });
@@ -247,9 +266,20 @@ const BeamDetails = ({ isAdmin }: { isAdmin: boolean }) => {
                       {format(new Date(delivery.delivery_date), 'dd MMM yyyy')}
                     </span>
                   </div>
-                  <span className="px-2 py-1 bg-primary-100 dark:bg-primary-900 text-primary-700 dark:text-primary-300 text-xs rounded-full font-semibold">
-                    Delivery #{deliveries.length - idx}
-                  </span>
+                  <div className="flex items-center space-x-2">
+                    <span className="px-2 py-1 bg-primary-100 dark:bg-primary-900 text-primary-700 dark:text-primary-300 text-xs rounded-full font-semibold">
+                      Delivery #{deliveries.length - idx}
+                    </span>
+                    {isAdmin && (
+                      <button
+                        onClick={() => handleDeleteDelivery(delivery.id, deliveries.length - idx)}
+                        className="p-1 text-red-500 hover:bg-red-50 dark:hover:bg-red-900/30 rounded transition"
+                        title="Delete Delivery"
+                      >
+                        <Trash2 className="w-4 h-4" />
+                      </button>
+                    )}
+                  </div>
                 </div>
 
                 <div className="grid grid-cols-2 gap-x-6 gap-y-2 mt-3">

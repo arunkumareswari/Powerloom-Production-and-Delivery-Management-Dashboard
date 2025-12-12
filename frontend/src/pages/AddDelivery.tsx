@@ -16,6 +16,7 @@ const AddDelivery = () => {
   const [selectedBeam, setSelectedBeam] = useState<any>(null);
   const [pricePresets, setPricePresets] = useState<any[]>([]);
   const [useCustomPrice, setUseCustomPrice] = useState(false);
+  const [damageUnit, setDamageUnit] = useState<'pieces' | 'meter'>('pieces');
 
   const [formData, setFormData] = useState({
     beam_id: preSelectedBeamId || '',
@@ -33,7 +34,7 @@ const AddDelivery = () => {
 
   useEffect(() => {
     if (preSelectedBeamId && activeBeams.length > 0) {
-      const beam = activeBeams.find(b => b.id === parseInt(preSelectedBeamId));
+      const beam = activeBeams.find(b => b.id === preSelectedBeamId);
       if (beam) {
         setSelectedBeam(beam);
         setFormData(prev => ({ ...prev, beam_id: preSelectedBeamId }));
@@ -55,15 +56,39 @@ const AddDelivery = () => {
   };
 
   const handleBeamChange = (beamId: string) => {
-    const beam = activeBeams.find(b => b.id === parseInt(beamId));
+    const beam = activeBeams.find(b => b.id === beamId);
     setSelectedBeam(beam);
     setFormData({ ...formData, beam_id: beamId });
   };
 
+  // Convert damaged value to pieces based on unit type (for backend API)
+  const getDamagedPieces = () => {
+    if (!formData.damaged_pieces || formData.damaged_pieces === '0') return 0;
+    const value = parseFloat(formData.damaged_pieces);
+    if (damageUnit === 'meter' && selectedBeam?.meters_per_piece) {
+      // Convert meters to pieces (round up)
+      return Math.ceil(value / selectedBeam.meters_per_piece);
+    }
+    return Math.floor(value); // If pieces, just return as integer
+  };
+
+  // Get damaged meters based on unit type (for display)
+  const getDamagedMeters = () => {
+    if (!formData.damaged_pieces || formData.damaged_pieces === '0') return 0;
+    const value = parseFloat(formData.damaged_pieces);
+    if (damageUnit === 'meter') {
+      // Direct meter value
+      return value;
+    }
+    // Pieces to meters
+    return value * (selectedBeam?.meters_per_piece || 0);
+  };
+
   const calculateMeters = () => {
     if (!selectedBeam || !formData.good_pieces) return 0;
-    const totalPieces = parseInt(formData.good_pieces) + parseInt(formData.damaged_pieces || '0');
-    return totalPieces * parseFloat(selectedBeam.meters_per_piece);
+    const goodMeters = parseInt(formData.good_pieces) * parseFloat(selectedBeam.meters_per_piece);
+    const damagedMeters = getDamagedMeters();
+    return goodMeters + damagedMeters;
   };
 
   const calculateAmount = () => {
@@ -78,12 +103,12 @@ const AddDelivery = () => {
 
     try {
       await deliveryAPI.add({
-        beam_id: parseInt(formData.beam_id),
+        beam_id: formData.beam_id,
         delivery_date: formData.delivery_date,
         design_name: formData.design_name,
         price_per_piece: parseFloat(formData.price_per_piece),
         good_pieces: parseInt(formData.good_pieces),
-        damaged_pieces: parseInt(formData.damaged_pieces),
+        damaged_pieces: getDamagedPieces(),
         notes: formData.notes || null,
       });
 
@@ -278,22 +303,42 @@ const AddDelivery = () => {
             />
           </div>
 
-          {/* Damaged Pieces */}
+          {/* Damaged */}
           <div>
             <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-              Damaged Pieces
+              Damaged
             </label>
-            <input
-              type="text"
-              inputMode="numeric"
-              value={formData.damaged_pieces}
-              onChange={(e) => {
-                const value = e.target.value.replace(/[^0-9]/g, '');
-                setFormData({ ...formData, damaged_pieces: value });
-              }}
-              className="w-full px-3 py-2 md:px-4 md:py-3 text-sm md:text-base border border-gray-300 dark:border-gray-600 rounded-lg md:rounded-xl bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-primary-500 focus:border-transparent outline-none"
-              placeholder="10"
-            />
+            <div className="flex">
+              <input
+                type="text"
+                inputMode={damageUnit === 'meter' ? 'decimal' : 'numeric'}
+                value={formData.damaged_pieces}
+                onChange={(e) => {
+                  const value = damageUnit === 'meter'
+                    ? e.target.value.replace(/[^0-9.]/g, '')
+                    : e.target.value.replace(/[^0-9]/g, '');
+                  setFormData({ ...formData, damaged_pieces: value });
+                }}
+                className="flex-1 px-3 py-2 md:px-4 md:py-3 text-sm md:text-base border border-gray-300 dark:border-gray-600 rounded-l-lg md:rounded-l-xl bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-primary-500 focus:border-transparent outline-none"
+                placeholder={damageUnit === 'meter' ? '7.5' : '10'}
+              />
+              <select
+                value={damageUnit}
+                onChange={(e) => {
+                  setDamageUnit(e.target.value as 'pieces' | 'meter');
+                  setFormData({ ...formData, damaged_pieces: '0' });
+                }}
+                className="px-2 py-2 md:px-3 md:py-3 text-sm md:text-base border border-l-0 border-gray-300 dark:border-gray-600 rounded-r-lg md:rounded-r-xl bg-gray-100 dark:bg-gray-600 text-gray-700 dark:text-gray-200 focus:ring-2 focus:ring-primary-500 outline-none cursor-pointer"
+              >
+                <option value="pieces">Pieces</option>
+                <option value="meter">Meter</option>
+              </select>
+            </div>
+            {damageUnit === 'meter' && formData.damaged_pieces && parseFloat(formData.damaged_pieces) > 0 && (
+              <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
+                ≈ {getDamagedPieces()} pieces ({formData.damaged_pieces}m ÷ {selectedBeam?.meters_per_piece}m/pc)
+              </p>
+            )}
           </div>
         </div>
 

@@ -1,5 +1,5 @@
 import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 import { ThemeProvider } from './context/ThemeContext';
 import Layout from './components/Layout';
 import Login from './pages/Login';
@@ -14,12 +14,11 @@ import ManageMachines from './pages/ManageMachines';
 import AdminPanel from './pages/AdminPanel';
 
 function App() {
-  const [isAdmin, setIsAdmin] = useState(false);
-
-  useEffect(() => {
+  // Initialize isAdmin directly from localStorage to persist login on refresh
+  const [isAdmin, setIsAdmin] = useState(() => {
     const token = localStorage.getItem('admin_token');
-    setIsAdmin(!!token);
-  }, []);
+    return !!token;
+  });
 
   const handleLogin = () => {
     setIsAdmin(true);
