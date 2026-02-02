@@ -224,7 +224,7 @@ const AddDelivery = () => {
           {/* Design Preset */}
           <div className="lg:col-span-2">
             <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-              Design Preset <span className="text-red-500">*</span>
+              Price <span className="text-red-500">*</span>
             </label>
             <select
               value={formData.price_per_piece ? `${formData.design_name}|${formData.price_per_piece}` : ''}
@@ -241,10 +241,10 @@ const AddDelivery = () => {
               className="w-full px-3 py-2 md:px-4 md:py-3 text-sm md:text-base border border-gray-300 dark:border-gray-600 rounded-lg md:rounded-xl bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-primary-500 focus:border-transparent outline-none"
               required={!useCustomPrice}
             >
-              <option value="">Select a design preset</option>
+              <option value="">Select a price</option>
               {pricePresets.map((preset) => (
                 <option key={preset.id} value={`${preset.label}|${preset.price}`}>
-                  {preset.label}
+                  ₹{preset.price}
                 </option>
               ))}
               <option value="custom">Custom Design & Price</option>

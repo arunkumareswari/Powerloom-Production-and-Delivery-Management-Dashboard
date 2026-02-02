@@ -411,7 +411,7 @@ async def get_fabric_distribution():
         raise HTTPException(status_code=500, detail=str(e))
 
 @app.get("/api/analytics/machine-quality")
-async def get_machine_quality(fabric_type: str = None):
+async def get_machine_quality(fabric_type: str = None, start_date: str = None, end_date: str = None):
     """Get machine-wise quality data"""
     try:
         pipeline = [
@@ -423,8 +423,28 @@ async def get_machine_quality(fabric_type: str = None):
         if fabric_type:
             pipeline.append({"$match": {"fabric_type": fabric_type}})
         
+        pipeline.append({"$lookup": {"from": "deliveries", "localField": "beams._id", "foreignField": "beam_id", "as": "deliveries"}})
+        
+        # Filter deliveries by date if specified
+        if start_date and end_date:
+            pipeline.append({
+                "$addFields": {
+                    "deliveries": {
+                        "$filter": {
+                            "input": "$deliveries",
+                            "as": "delivery",
+                            "cond": {
+                                "$and": [
+                                    {"$gte": ["$$delivery.delivery_date", start_date]},
+                                    {"$lte": ["$$delivery.delivery_date", end_date]}
+                                ]
+                            }
+                        }
+                    }
+                }
+            })
+        
         pipeline.extend([
-            {"$lookup": {"from": "deliveries", "localField": "beams._id", "foreignField": "beam_id", "as": "deliveries"}},
             {"$project": {
                 "workshop_name": "$workshop.name",
                 "machine_number": 1,
@@ -447,13 +467,21 @@ async def get_machine_quality(fabric_type: str = None):
         raise HTTPException(status_code=500, detail=str(e))
 
 @app.get("/api/analytics/workshop-machine-production")
-async def get_workshop_machine_production(fabric_type: str = None):
+async def get_workshop_machine_production(fabric_type: str = None, start_date: str = None, end_date: str = None):
     """Get machine-wise production data for each workshop - only machines with active beams"""
     try:
         # Start from beams collection and filter for active beams only
         beam_match = {"status": "active"}
         if fabric_type:
             beam_match["fabric_type"] = fabric_type
+        
+        # Build delivery filter for date range
+        delivery_match = {}
+        if start_date and end_date:
+            delivery_match["delivery_date"] = {
+                "$gte": start_date,
+                "$lte": end_date
+            }
         
         pipeline = [
             {"$match": beam_match},
@@ -462,6 +490,28 @@ async def get_workshop_machine_production(fabric_type: str = None):
             {"$lookup": {"from": "workshops", "localField": "machine.workshop_id", "foreignField": "_id", "as": "workshop"}},
             {"$unwind": "$workshop"},
             {"$lookup": {"from": "deliveries", "localField": "_id", "foreignField": "beam_id", "as": "deliveries"}},
+        ]
+        
+        # Filter deliveries by date if specified
+        if delivery_match:
+            pipeline.append({
+                "$addFields": {
+                    "deliveries": {
+                        "$filter": {
+                            "input": "$deliveries",
+                            "as": "delivery",
+                            "cond": {
+                                "$and": [
+                                    {"$gte": ["$$delivery.delivery_date", start_date]},
+                                    {"$lte": ["$$delivery.delivery_date", end_date]}
+                                ]
+                            }
+                        }
+                    }
+                }
+            })
+        
+        pipeline.extend([
             {"$project": {
                 "workshop_name": "$workshop.name",
                 "machine_number": "$machine.machine_number",
@@ -477,7 +527,7 @@ async def get_workshop_machine_production(fabric_type: str = None):
             }},
             {"$project": {"workshop_name": "$_id", "machines": 1, "_id": 0}},
             {"$sort": {"workshop_name": 1}}
-        ]
+        ])
         
         results = list(beams_col.aggregate(pipeline))
         return {"data": results}
@@ -1090,7 +1140,8 @@ async def delete_machine(machine_id: str, admin: str = Depends(verify_token)):
 
 @app.get("/api/customers")
 async def get_all_customers():
-    customers = list(customers_col.find({"is_active": {"$ne": False}}))
+    # Return ALL customers (both active and inactive) for Admin Panel
+    customers = list(customers_col.find({}))
     return {"customers": serialize_docs(customers)}
 
 @app.post("/api/customers")

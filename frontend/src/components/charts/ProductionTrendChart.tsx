@@ -119,7 +119,7 @@ const ProductionTrendChart = ({ filterType, fabricType, startDate, endDate }: Fi
                         axisLine={{ stroke: '#e5e7eb' }}
                         tickFormatter={(value) => {
                             const date = new Date(value);
-                            return `${date.getMonth() + 1}/${date.getDate()}`;
+                            return `${date.getDate()}/${date.getMonth() + 1}`;
                         }}
                     />
                     <YAxis

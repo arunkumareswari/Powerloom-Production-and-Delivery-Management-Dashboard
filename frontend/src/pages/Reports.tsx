@@ -472,7 +472,7 @@ const Reports = ({ isAdmin }: { isAdmin: boolean }) => {
 
                         // Add separator for groups after first
                         if (groupIdx > 0) {
-                          tableBody.push([{ content: '', colSpan: 9, styles: { fillColor: [255, 255, 255], minCellHeight: 2 } }]);
+                          tableBody.push([{ content: '', colSpan: 8, styles: { fillColor: [255, 255, 255], minCellHeight: 2 } }]);
                         }
 
                         // Add items in group (white background)
@@ -481,8 +481,7 @@ const Reports = ({ isAdmin }: { isAdmin: boolean }) => {
                             { content: formatDisplayDate(date), styles: { fillColor: [255, 255, 255] } },
                             { content: d.machine_number || 'N/A', styles: { fillColor: [255, 255, 255] } },
                             { content: workshop, styles: { fillColor: [255, 255, 255] } },
-                            { content: d.customer, styles: { fillColor: [255, 255, 255] } },
-                            { content: d.design_name || '-', styles: { fillColor: [255, 255, 255] } },
+                            { content: `Rs.${d.price_per_piece || '-'}`, styles: { fillColor: [255, 255, 255] } },
                             { content: d.good_pieces.toString(), styles: { fillColor: [255, 255, 255] } },
                             { content: d.damaged_pieces.toString(), styles: { fillColor: [255, 255, 255] } },
                             { content: `${d.meters_used}m`, styles: { fillColor: [255, 255, 255] } },
@@ -492,7 +491,7 @@ const Reports = ({ isAdmin }: { isAdmin: boolean }) => {
 
                         // Add group subtotal row (light blue)
                         tableBody.push([
-                          { content: `${formatDisplayDate(date)} - ${workshop} Total`, colSpan: 5, styles: { fontStyle: 'bold', fillColor: [230, 245, 255] } },
+                          { content: `${formatDisplayDate(date)} - ${workshop} Total`, colSpan: 4, styles: { fontStyle: 'bold', fillColor: [230, 245, 255] } },
                           { content: group.totalGood.toString(), styles: { fontStyle: 'bold', fillColor: [230, 245, 255] } },
                           { content: group.totalDamaged.toString(), styles: { fontStyle: 'bold', fillColor: [230, 245, 255] } },
                           { content: `${group.totalMeters}m`, styles: { fontStyle: 'bold', fillColor: [230, 245, 255] } },
@@ -501,7 +500,7 @@ const Reports = ({ isAdmin }: { isAdmin: boolean }) => {
                       });
 
                       autoTable(doc, {
-                        head: [['Date', 'Machine', 'Workshop', 'Customer', 'Design', 'Good', 'Damaged', 'Meters', 'Amount']],
+                        head: [['Date', 'Machine', 'Workshop', 'Price', 'Good', 'Damaged', 'Meters', 'Amount']],
                         body: tableBody,
                         startY: 38,
                         styles: { fontSize: 8, cellPadding: 1 },
@@ -521,13 +520,12 @@ const Reports = ({ isAdmin }: { isAdmin: boolean }) => {
                     onClick={() => {
                       if (filteredDeliveryData.length === 0) return;
 
-                      const headers = ['Date', 'Machine', 'Workshop', 'Customer', 'Design', 'Good', 'Damaged', 'Meters', 'Amount'];
+                      const headers = ['Date', 'Machine', 'Workshop', 'Price', 'Good', 'Damaged', 'Meters', 'Amount'];
                       const csvData = filteredDeliveryData.map(d => [
                         d.delivery_date,
                         d.machine_number || 'N/A',
                         d.workshop,
-                        d.customer,
-                        d.design_name || '-',
+                        d.price_per_piece || '-',
                         d.good_pieces,
                         d.damaged_pieces,
                         d.meters_used,
@@ -561,8 +559,7 @@ const Reports = ({ isAdmin }: { isAdmin: boolean }) => {
                   <th className="text-left py-3 px-4 font-semibold text-gray-700 dark:text-gray-300">Date</th>
                   <th className="text-left py-3 px-4 font-semibold text-gray-700 dark:text-gray-300">Machine</th>
                   <th className="text-left py-3 px-4 font-semibold text-gray-700 dark:text-gray-300">Workshop</th>
-                  <th className="text-left py-3 px-4 font-semibold text-gray-700 dark:text-gray-300">Customer</th>
-                  <th className="text-left py-3 px-4 font-semibold text-gray-700 dark:text-gray-300">Design</th>
+                  <th className="text-left py-3 px-4 font-semibold text-gray-700 dark:text-gray-300">Price</th>
                   <th className="text-right py-3 px-4 font-semibold text-gray-700 dark:text-gray-300">Good</th>
                   <th className="text-right py-3 px-4 font-semibold text-gray-700 dark:text-gray-300">Damaged</th>
                   <th className="text-right py-3 px-4 font-semibold text-gray-700 dark:text-gray-300">Meters</th>
@@ -575,11 +572,10 @@ const Reports = ({ isAdmin }: { isAdmin: boolean }) => {
                     <td className="py-3 px-4 text-gray-700 dark:text-gray-300">{formatDisplayDate(d.delivery_date)}</td>
                     <td className="py-3 px-4 font-semibold text-gray-900 dark:text-white">{d.machine_number || 'N/A'}</td>
                     <td className="py-3 px-4 text-gray-700 dark:text-gray-300">{d.workshop}</td>
-                    <td className="py-3 px-4 text-gray-700 dark:text-gray-300">{d.customer}</td>
-                    <td className="py-3 px-4 text-gray-600 dark:text-gray-400">{d.design_name || '-'}</td>
+                    <td className="py-3 px-4 text-gray-600 dark:text-gray-400">₹{d.price_per_piece || '-'}</td>
                     <td className="py-3 px-4 text-right font-semibold text-green-600 dark:text-green-400">{d.good_pieces}</td>
                     <td className="py-3 px-4 text-right font-semibold text-red-600 dark:text-red-400">{d.damaged_pieces}</td>
-                    <td className="py-3 px-4 text-right text-gray-900 dark:text-white">{d.meters_used}m</td>
+                    <td className="py-3 px-4 text-right text-gray-700 dark:text-gray-300">{d.meters_used}m</td>
                     <td className="py-3 px-4 text-right font-semibold text-primary-600 dark:text-primary-400">
                       ₹{d.total_amount.toLocaleString()}
                     </td>

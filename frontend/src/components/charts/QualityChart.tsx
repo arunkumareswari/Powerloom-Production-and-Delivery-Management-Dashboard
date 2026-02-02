@@ -28,8 +28,25 @@ const QualityChart = ({ filterType, fabricType, startDate, endDate }: FilterProp
         try {
             setLoading(true);
 
-            // Build query params
+            // Build query params based on filters
             let params = new URLSearchParams();
+
+            // Add date filter support
+            if (filterType === 'custom' && startDate && endDate) {
+                params.append('start_date', startDate);
+                params.append('end_date', endDate);
+            } else if (filterType === 'all') {
+                params.append('start_date', '2000-01-01');
+                params.append('end_date', '2099-12-31');
+            } else if (filterType === 'month') {
+                // Calculate current month's start and end dates
+                const now = new Date();
+                const firstDay = new Date(now.getFullYear(), now.getMonth(), 1);
+                const lastDay = new Date(now.getFullYear(), now.getMonth() + 1, 0);
+                params.append('start_date', firstDay.toISOString().split('T')[0]);
+                params.append('end_date', lastDay.toISOString().split('T')[0]);
+            }
+
             if (fabricType !== 'all') {
                 params.append('fabric_type', fabricType);
             }
